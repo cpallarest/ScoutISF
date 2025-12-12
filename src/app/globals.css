@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 25% 8%; /* #0F1419 */
+    --foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --card: 220 23% 13%; /* #1A1F29 */
+    --card-foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --popover: 220 23% 13%; /* #1A1F29 */
+    --popover-foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --primary: 189 100% 50%; /* #00D9FF */
+    --primary-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --secondary: 36 100% 65%; /* #FFB84D */
+    --secondary-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --muted: 220 23% 13%; /* #1A1F29 */
+    --muted-foreground: 219 14% 60%; /* #8A94A6 */
+    
+    --accent: 189 100% 50%; /* #00D9FF */
+    --accent-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    
+    --border: 219 14% 20%; /* Darker border for dark mode */
+    --input: 219 14% 20%;
+    --ring: 189 100% 50%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 210 25% 8%; /* #0F1419 */
+    --foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --card: 220 23% 13%; /* #1A1F29 */
+    --card-foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --popover: 220 23% 13%; /* #1A1F29 */
+    --popover-foreground: 210 20% 93%; /* #E8EDF2 */
+    
+    --primary: 189 100% 50%; /* #00D9FF */
+    --primary-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --secondary: 36 100% 65%; /* #FFB84D */
+    --secondary-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --muted: 220 23% 13%; /* #1A1F29 */
+    --muted-foreground: 219 14% 60%; /* #8A94A6 */
+    
+    --accent: 189 100% 50%; /* #00D9FF */
+    --accent-foreground: 210 25% 8%; /* #0F1419 */
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+    
+    --border: 219 14% 20%;
+    --input: 219 14% 20%;
+    --ring: 189 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

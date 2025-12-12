@@ -1,0 +1,171 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      players: {
+        Row: {
+          id: string
+          name: string
+          dob: string | null
+          height: number | null
+          foot: "Left" | "Right" | "Both" | null
+          position: string | null
+          nationality: string | null
+          current_team_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          dob?: string | null
+          height?: number | null
+          foot?: "Left" | "Right" | "Both" | null
+          position?: string | null
+          nationality?: string | null
+          current_team_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          dob?: string | null
+          height?: number | null
+          foot?: "Left" | "Right" | "Both" | null
+          position?: string | null
+          nationality?: string | null
+          current_team_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      teams: {
+        Row: {
+          id: string
+          name: string
+          country: string | null
+          logo_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          country?: string | null
+          logo_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          country?: string | null
+          logo_url?: string | null
+          created_at?: string
+        }
+      }
+      competitions: {
+        Row: {
+          id: string
+          name: string
+          country: string | null
+          season: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          country?: string | null
+          season?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          country?: string | null
+          season?: string | null
+          created_at?: string
+        }
+      }
+      reports: {
+        Row: {
+          id: string
+          user_id: string | null
+          match_date: string
+          home_team_id: string | null
+          away_team_id: string | null
+          competition_id: string | null
+          home_score: number | null
+          away_score: number | null
+          status: "draft" | "published" | null
+          lineup_data: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          match_date: string
+          home_team_id?: string | null
+          away_team_id?: string | null
+          competition_id?: string | null
+          home_score?: number | null
+          away_score?: number | null
+          status?: "draft" | "published" | null
+          lineup_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          match_date?: string
+          home_team_id?: string | null
+          away_team_id?: string | null
+          competition_id?: string | null
+          home_score?: number | null
+          away_score?: number | null
+          status?: "draft" | "published" | null
+          lineup_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      report_players: {
+        Row: {
+          id: string
+          report_id: string | null
+          player_id: string | null
+          grade: "A" | "B" | "C" | "D" | null
+          verdict: "Descartar" | "Seguir" | "Interesante" | "Fichar" | null
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          report_id?: string | null
+          player_id?: string | null
+          grade?: "A" | "B" | "C" | "D" | null
+          verdict?: "Descartar" | "Seguir" | "Interesante" | "Fichar" | null
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          report_id?: string | null
+          player_id?: string | null
+          grade?: "A" | "B" | "C" | "D" | null
+          verdict?: "Descartar" | "Seguir" | "Interesante" | "Fichar" | null
+          comment?: string | null
+          created_at?: string
+        }
+      }
+    }
+  }
+}
