@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, Users, Shield, Trophy, User, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  Users,
+  Shield,
+  Trophy,
+  User,
+  LogOut,
+} from "lucide-react";
 import { Button } from "./ui/button";
-import { createClient } from "../../supabase/client";
+import { createClient } from "@/supabase/client";
 import { useRouter } from "next/navigation";
 
 const sidebarItems = [
@@ -34,7 +42,7 @@ export function Sidebar() {
           Scout<span className="text-primary">Pro</span>
         </h1>
       </div>
-      
+
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {sidebarItems.map((item) => {
           const isActive = pathname === item.href;
@@ -46,7 +54,7 @@ export function Sidebar() {
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <item.icon size={20} />
@@ -57,8 +65,8 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={handleSignOut}
         >
