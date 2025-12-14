@@ -1,4 +1,4 @@
-import { createClient } from "../../../../../supabase/server";
+import { createClient } from "@/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function PrintReportPage({ params }: { params: { id: string } }) {
@@ -37,44 +37,93 @@ export default async function PrintReportPage({ params }: { params: { id: string
         <div>
           <div className="text-xs uppercase text-gray-500 font-bold">Score</div>
           <div className="text-xl font-mono">{report.home_score} - {report.away_score}</div>
+          <div className="text-xs text-gray-500 mt-1">HT: {report.halftime_home_score} - {report.halftime_away_score}</div>
         </div>
         <div>
           <div className="text-xs uppercase text-gray-500 font-bold">Competition</div>
           <div className="text-lg">{report.competition?.name}</div>
+          <div className="text-xs text-gray-500">{report.competition?.season}</div>
         </div>
         <div>
-          <div className="text-xs uppercase text-gray-500 font-bold">Season</div>
-          <div className="text-lg">{report.competition?.season}</div>
+          <div className="text-xs uppercase text-gray-500 font-bold">Venue</div>
+          <div className="text-lg">{report.venue || "-"}</div>
+          <div className="text-xs text-gray-500">{report.conditions || "-"}</div>
         </div>
         <div>
-          <div className="text-xs uppercase text-gray-500 font-bold">Scout</div>
-          <div className="text-lg">{user.email}</div>
+          <div className="text-xs uppercase text-gray-500 font-bold">Referee</div>
+          <div className="text-lg">{report.referee || "-"}</div>
+          <div className="text-xs text-gray-500">Scout: {user.email}</div>
+        </div>
+      </div>
+
+      {/* Systems */}
+      <div className="grid grid-cols-2 gap-8 mb-8">
+        <div>
+          <div className="text-xs uppercase text-gray-500 font-bold mb-1">Home System</div>
+          <div className="text-lg font-mono">{report.home_system || "-"}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-gray-500 font-bold mb-1">Away System</div>
+          <div className="text-lg font-mono">{report.away_system || "-"}</div>
         </div>
       </div>
 
       {/* Tactical Field */}
       <div className="mb-8 break-inside-avoid">
-        <h2 className="text-xl font-bold mb-4 uppercase border-l-4 border-black pl-3">Tactical Lineup</h2>
-        <div className="aspect-[16/9] bg-green-50 rounded-lg relative overflow-hidden border border-black/10 print:border-black">
-           {/* Pitch Markings - simplified for print */}
-           <div className="absolute inset-4 border-2 border-green-800/20 rounded-sm"></div>
-           <div className="absolute top-0 bottom-0 left-1/2 w-px bg-green-800/20"></div>
-           <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-green-800/20 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-           
-           {report.lineup_data && (report.lineup_data as any[]).map((p: any) => (
-             <div 
-               key={p.id}
-               className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
-               style={{ left: `${p.x}%`, top: `${p.y}%` }}
-             >
-               <div className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold border border-white print:bg-black print:text-white">
-                 {p.dorsal}
-               </div>
-               <div className="mt-1 bg-white/80 text-black text-[10px] px-1 rounded text-center font-bold border border-gray-200">
-                 {p.name}
-               </div>
-             </div>
-           ))}
+        <h2 className="text-xl font-bold mb-4 uppercase border-l-4 border-black pl-3">Tactical Lineups</h2>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* Home Team Pitch */}
+          <div>
+            <div className="text-sm font-bold mb-2 text-center">{report.home_team?.name}</div>
+            <div className="aspect-[2/3] bg-green-50 rounded-lg relative overflow-hidden border border-black/10 print:border-black">
+               {/* Pitch Markings */}
+               <div className="absolute inset-4 border-2 border-green-800/20 rounded-sm"></div>
+               <div className="absolute top-1/2 left-0 right-0 h-px bg-green-800/20"></div>
+               <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-green-800/20 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+               
+               {report.lineup_data?.home && (report.lineup_data.home as any[]).map((p: any) => (
+                 <div 
+                   key={p.id}
+                   className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
+                   style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                 >
+                   <div className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] font-bold border border-white print:bg-black print:text-white">
+                     {p.dorsal}
+                   </div>
+                   <div className="mt-0.5 bg-white/80 text-black text-[8px] px-1 rounded text-center font-bold border border-gray-200 whitespace-nowrap">
+                     {p.name}
+                   </div>
+                 </div>
+               ))}
+            </div>
+          </div>
+
+          {/* Away Team Pitch */}
+          <div>
+            <div className="text-sm font-bold mb-2 text-center">{report.away_team?.name}</div>
+            <div className="aspect-[2/3] bg-green-50 rounded-lg relative overflow-hidden border border-black/10 print:border-black">
+               {/* Pitch Markings */}
+               <div className="absolute inset-4 border-2 border-green-800/20 rounded-sm"></div>
+               <div className="absolute top-1/2 left-0 right-0 h-px bg-green-800/20"></div>
+               <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-green-800/20 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+               
+               {report.lineup_data?.away && (report.lineup_data.away as any[]).map((p: any) => (
+                 <div 
+                   key={p.id}
+                   className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
+                   style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                 >
+                   <div className="w-5 h-5 bg-white text-black rounded-full flex items-center justify-center text-[10px] font-bold border border-black print:bg-white print:text-black">
+                     {p.dorsal}
+                   </div>
+                   <div className="mt-0.5 bg-white/80 text-black text-[8px] px-1 rounded text-center font-bold border border-gray-200 whitespace-nowrap">
+                     {p.name}
+                   </div>
+                 </div>
+               ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -85,6 +134,7 @@ export default async function PrintReportPage({ params }: { params: { id: string
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b-2 border-black">
             <tr>
               <th className="px-4 py-3">Player</th>
+              <th className="px-4 py-3">Pos</th>
               <th className="px-4 py-3">Grade</th>
               <th className="px-4 py-3">Verdict</th>
               <th className="px-4 py-3 w-1/2">Comments</th>
@@ -97,6 +147,7 @@ export default async function PrintReportPage({ params }: { params: { id: string
                   {rp.player.name}
                   <div className="text-xs text-gray-500">{rp.player.position}</div>
                 </td>
+                <td className="px-4 py-3 font-mono">{rp.position_in_match || "-"}</td>
                 <td className="px-4 py-3 font-mono font-bold">{rp.grade || "-"}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded text-xs font-bold border ${

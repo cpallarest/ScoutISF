@@ -28,6 +28,13 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
     competition_id: "",
     home_score: 0,
     away_score: 0,
+    halftime_home_score: 0,
+    halftime_away_score: 0,
+    venue: "",
+    referee: "",
+    conditions: "",
+    home_system: "",
+    away_system: "",
     status: "draft",
     lineup_data: []
   });
@@ -66,6 +73,28 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
   };
 
   const handlePublish = async () => {
+    // Validate Metadata
+    if (!reportData.match_date || !reportData.home_team_id || !reportData.away_team_id || !reportData.competition_id) {
+      toast({ title: "Error", description: "Please fill in all match metadata", variant: "destructive" });
+      return;
+    }
+
+    // Validate Evaluations
+    if (reportId) {
+      const { data: evaluations } = await supabase.from("report_players").select("*").eq("report_id", reportId);
+      
+      if (!evaluations || evaluations.length === 0) {
+        toast({ title: "Error", description: "Please add at least one player evaluation", variant: "destructive" });
+        return;
+      }
+
+      const incompleteEvaluations = evaluations.filter((e: any) => !e.grade || !e.verdict || !e.comment || !e.position_in_match);
+      if (incompleteEvaluations.length > 0) {
+        toast({ title: "Error", description: `Please complete all fields for all players (${incompleteEvaluations.length} incomplete)`, variant: "destructive" });
+        return;
+      }
+    }
+
     await handleSave({ status: "published" });
     router.push("/dashboard/reports");
   };
@@ -112,6 +141,7 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
             <CardContent className="pt-6">
               <TacticalField 
                 data={reportData} 
+                matchId={reportData.match_id}
                 onSave={(data) => handleSave({ lineup_data: data }, "evaluation")} 
               />
             </CardContent>

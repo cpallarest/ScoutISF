@@ -1,4 +1,4 @@
-import { createClient } from "../../../../../supabase/server";
+import { createClient } from "@/supabase/server";
 import { Button } from "@/components/ui/button";
 import { FileDown, Edit, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -81,37 +81,77 @@ export default async function ReportViewPage({ params }: { params: { id: string 
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Tactical Lineup</CardTitle>
+            <CardTitle>Tactical Lineups</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="aspect-[16/9] bg-green-900 rounded-lg relative overflow-hidden border border-white/10 shadow-inner"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
-                `,
-                backgroundSize: "10% 10%"
-              }}
-            >
-               {/* Pitch Markings */}
-               <div className="absolute inset-4 border-2 border-white/20 rounded-sm pointer-events-none"></div>
-               <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/20 pointer-events-none"></div>
-               <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-               
-               {report.lineup_data && (report.lineup_data as any[]).map((p: any) => (
-                 <div 
-                   key={p.id}
-                   className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
-                   style={{ left: `${p.x}%`, top: `${p.y}%` }}
-                 >
-                   <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold border border-white shadow-sm">
-                     {p.dorsal}
-                   </div>
-                   <div className="mt-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded text-center backdrop-blur-sm">
-                     {p.name}
-                   </div>
-                 </div>
-               ))}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Home Team Pitch */}
+              <div>
+                <div className="text-sm font-bold mb-2 text-center">{report.home_team?.name || "Home Team"}</div>
+                <div className="aspect-[2/3] bg-green-900 rounded-lg relative overflow-hidden border border-white/10 shadow-inner"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
+                    `,
+                    backgroundSize: "10% 10%"
+                  }}
+                >
+                   {/* Pitch Markings */}
+                   <div className="absolute inset-4 border-2 border-white/20 rounded-sm pointer-events-none"></div>
+                   <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20 pointer-events-none"></div>
+                   <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                   
+                   {report.lineup_data?.home && (report.lineup_data.home as any[]).map((p: any) => (
+                     <div 
+                       key={p.id}
+                       className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
+                       style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                     >
+                       <div className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[10px] font-bold border border-white shadow-sm">
+                         {p.dorsal}
+                       </div>
+                       <div className="mt-0.5 bg-white/80 text-black text-[8px] px-1 rounded text-center backdrop-blur-sm whitespace-nowrap">
+                         {p.name}
+                       </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+
+              {/* Away Team Pitch */}
+              <div>
+                <div className="text-sm font-bold mb-2 text-center">{report.away_team?.name || "Away Team"}</div>
+                <div className="aspect-[2/3] bg-green-900 rounded-lg relative overflow-hidden border border-white/10 shadow-inner"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
+                    `,
+                    backgroundSize: "10% 10%"
+                  }}
+                >
+                   {/* Pitch Markings */}
+                   <div className="absolute inset-4 border-2 border-white/20 rounded-sm pointer-events-none"></div>
+                   <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20 pointer-events-none"></div>
+                   <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                   
+                   {report.lineup_data?.away && (report.lineup_data.away as any[]).map((p: any) => (
+                     <div 
+                       key={p.id}
+                       className="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2"
+                       style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                     >
+                       <div className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-[10px] font-bold border border-black shadow-sm">
+                         {p.dorsal}
+                       </div>
+                       <div className="mt-0.5 bg-white/80 text-black text-[8px] px-1 rounded text-center backdrop-blur-sm whitespace-nowrap">
+                         {p.name}
+                       </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

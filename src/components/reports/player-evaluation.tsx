@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 
 interface PlayerEvaluationProps {
   reportId: string;
@@ -66,6 +65,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
       .insert({
         report_id: reportId,
         player_id: player.id,
+        position_in_match: "",
         grade: null,
         verdict: null,
         comment: ""
@@ -93,24 +93,6 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
   const removeEvaluation = async (id: string) => {
     setEvaluations(evaluations.filter(e => e.id !== id));
     await supabase.from("report_players").delete().eq("id", id);
-  };
-
-  // Create new player logic
-  const [newPlayerOpen, setNewPlayerOpen] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState("");
-
-  const createNewPlayer = async () => {
-    const { data } = await supabase
-      .from("players")
-      .insert({ name: newPlayerName })
-      .select()
-      .single();
-    
-    if (data) {
-      await addPlayerToReport(data);
-      setNewPlayerOpen(false);
-      setNewPlayerName("");
-    }
   };
 
   return (
@@ -142,23 +124,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
             </div>
           )}
         </div>
-        <Dialog open={newPlayerOpen} onOpenChange={setNewPlayerOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Create New Player</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Player</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Player Name</Label>
-                <Input value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} />
-              </div>
-              <Button onClick={createNewPlayer} disabled={!newPlayerName}>Create & Add</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <CreatePlayerDialog onPlayerCreated={addPlayerToReport} />
       </div>
 
       <div className="rounded-md border border-border">
@@ -166,6 +132,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Player</TableHead>
+              <TableHead className="w-[80px]">Pos</TableHead>
               <TableHead className="w-[100px]">Grade</TableHead>
               <TableHead className="w-[150px]">Verdict</TableHead>
               <TableHead>Comment</TableHead>
@@ -178,6 +145,14 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
                 <TableCell className="font-medium">
                   {evaluation.player.name}
                   <div className="text-xs text-muted-foreground">{evaluation.player.position}</div>
+                </TableCell>
+                <TableCell>
+                  <Input 
+                    className="h-8" 
+                    value={evaluation.position_in_match || ""} 
+                    onChange={(e) => updateEvaluation(evaluation.id, "position_in_match", e.target.value)}
+                    placeholder="Pos"
+                  />
                 </TableCell>
                 <TableCell>
                   <Select 

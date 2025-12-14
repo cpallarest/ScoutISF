@@ -1,4 +1,4 @@
-import { createClient } from "../../../../../supabase/server";
+import { createClient } from "@/supabase/server";
 import { ReportEditor } from "@/components/reports/report-editor";
 import { redirect } from "next/navigation";
 

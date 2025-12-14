@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit } from "lucide-react";
+import { Eye, Edit, Printer } from "lucide-react";
 import Link from "next/link";
 
 interface Report {
@@ -80,6 +80,11 @@ export function RecentReportsTable({ reports }: RecentReportsTableProps) {
                     <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                       <Link href={`/dashboard/reports/${report.id}/edit`}>
                         <Edit className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/dashboard/reports/${report.id}/print`} target="_blank">
+                        <Printer className="h-4 w-4" />
                       </Link>
                     </Button>
                   </div>

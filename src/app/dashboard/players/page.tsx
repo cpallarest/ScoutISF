@@ -1,9 +1,10 @@
-import { createClient } from "../../../../supabase/server";
+import { createClient } from "@/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PlayersTable } from "@/components/players/players-table";
+import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 
 export default async function PlayersPage() {
   const supabase = await createClient();
@@ -20,10 +21,7 @@ export default async function PlayersPage() {
           <h1 className="text-3xl font-bold font-display tracking-tight">Players</h1>
           <p className="text-muted-foreground mt-1">Global player database</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Player
-        </Button>
+        <CreatePlayerDialog />
       </div>
 
       <PlayersTable players={players as any || []} />

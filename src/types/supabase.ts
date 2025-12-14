@@ -19,24 +19,173 @@ export type Database = {
           country: string | null
           created_at: string | null
           id: string
+          is_active: boolean | null
           name: string
+          provider: string | null
+          provider_competition_id: string | null
           season: string | null
         }
         Insert: {
           country?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           name: string
+          provider?: string | null
+          provider_competition_id?: string | null
           season?: string | null
         }
         Update: {
           country?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           name?: string
+          provider?: string | null
+          provider_competition_id?: string | null
           season?: string | null
         }
         Relationships: []
+      }
+      lineup_positions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_starting_xi: boolean | null
+          match_id: string | null
+          player_id: string | null
+          position: string | null
+          shirt_number: number | null
+          team_id: string | null
+          x: number | null
+          y: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_starting_xi?: boolean | null
+          match_id?: string | null
+          player_id?: string | null
+          position?: string | null
+          shirt_number?: number | null
+          team_id?: string | null
+          x?: number | null
+          y?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_starting_xi?: boolean | null
+          match_id?: string | null
+          player_id?: string | null
+          position?: string | null
+          shirt_number?: number | null
+          team_id?: string | null
+          x?: number | null
+          y?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineup_positions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineup_positions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          away_score: number | null
+          away_team_id: string | null
+          competition_id: string | null
+          created_at: string | null
+          home_score: number | null
+          home_team_id: string | null
+          ht_away_score: number | null
+          ht_home_score: number | null
+          id: string
+          kickoff_at: string | null
+          provider: string | null
+          provider_fixture_id: string | null
+          season: string | null
+          status: string | null
+          updated_at: string | null
+          venue: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_id?: string | null
+          competition_id?: string | null
+          created_at?: string | null
+          home_score?: number | null
+          home_team_id?: string | null
+          ht_away_score?: number | null
+          ht_home_score?: number | null
+          id?: string
+          kickoff_at?: string | null
+          provider?: string | null
+          provider_fixture_id?: string | null
+          season?: string | null
+          status?: string | null
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          away_team_id?: string | null
+          competition_id?: string | null
+          created_at?: string | null
+          home_score?: number | null
+          home_team_id?: string | null
+          ht_away_score?: number | null
+          ht_home_score?: number | null
+          id?: string
+          kickoff_at?: string | null
+          provider?: string | null
+          provider_fixture_id?: string | null
+          season?: string | null
+          status?: string | null
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       players: {
         Row: {
@@ -49,6 +198,8 @@ export type Database = {
           name: string
           nationality: string | null
           position: string | null
+          provider: string | null
+          provider_player_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -61,6 +212,8 @@ export type Database = {
           name: string
           nationality?: string | null
           position?: string | null
+          provider?: string | null
+          provider_player_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -73,7 +226,33 @@ export type Database = {
           name?: string
           nationality?: string | null
           position?: string | null
+          provider?: string | null
+          provider_player_id?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      provider_cache: {
+        Row: {
+          created_at: string | null
+          data: Json
+          expires_at: string
+          id: string
+          key: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          expires_at: string
+          id?: string
+          key: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          expires_at?: string
+          id?: string
+          key?: string
         }
         Relationships: []
       }
@@ -84,6 +263,7 @@ export type Database = {
           grade: string | null
           id: string
           player_id: string | null
+          position_in_match: string | null
           report_id: string | null
           verdict: string | null
         }
@@ -93,6 +273,7 @@ export type Database = {
           grade?: string | null
           id?: string
           player_id?: string | null
+          position_in_match?: string | null
           report_id?: string | null
           verdict?: string | null
         }
@@ -102,6 +283,7 @@ export type Database = {
           grade?: string | null
           id?: string
           player_id?: string | null
+          position_in_match?: string | null
           report_id?: string | null
           verdict?: string | null
         }
@@ -125,45 +307,69 @@ export type Database = {
       reports: {
         Row: {
           away_score: number | null
+          away_system: string | null
           away_team_id: string | null
           competition_id: string | null
+          conditions: string | null
           created_at: string | null
+          halftime_away_score: number | null
+          halftime_home_score: number | null
           home_score: number | null
+          home_system: string | null
           home_team_id: string | null
           id: string
           lineup_data: Json | null
           match_date: string
+          match_id: string | null
+          referee: string | null
           status: string | null
           updated_at: string | null
           user_id: string | null
+          venue: string | null
         }
         Insert: {
           away_score?: number | null
+          away_system?: string | null
           away_team_id?: string | null
           competition_id?: string | null
+          conditions?: string | null
           created_at?: string | null
+          halftime_away_score?: number | null
+          halftime_home_score?: number | null
           home_score?: number | null
+          home_system?: string | null
           home_team_id?: string | null
           id?: string
           lineup_data?: Json | null
           match_date: string
+          match_id?: string | null
+          referee?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          venue?: string | null
         }
         Update: {
           away_score?: number | null
+          away_system?: string | null
           away_team_id?: string | null
           competition_id?: string | null
+          conditions?: string | null
           created_at?: string | null
+          halftime_away_score?: number | null
+          halftime_home_score?: number | null
           home_score?: number | null
+          home_system?: string | null
           home_team_id?: string | null
           id?: string
           lineup_data?: Json | null
           match_date?: string
+          match_id?: string | null
+          referee?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          venue?: string | null
         }
         Relationships: [
           {
@@ -187,6 +393,96 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reports_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_roster_players: {
+        Row: {
+          created_at: string | null
+          id: string
+          player_id: string | null
+          position: string | null
+          shirt_number: number | null
+          team_roster_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          position?: string | null
+          shirt_number?: number | null
+          team_roster_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          position?: string | null
+          shirt_number?: number | null
+          team_roster_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_roster_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_roster_players_team_roster_id_fkey"
+            columns: ["team_roster_id"]
+            isOneToOne: false
+            referencedRelation: "team_rosters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_rosters: {
+        Row: {
+          created_at: string | null
+          id: string
+          month: string | null
+          source: string | null
+          source_meta: Json | null
+          status: string | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month?: string | null
+          source?: string | null
+          source_meta?: Json | null
+          status?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month?: string | null
+          source?: string | null
+          source_meta?: Json | null
+          status?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_rosters_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
         ]
       }
       teams: {
@@ -196,6 +492,8 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          provider: string | null
+          provider_team_id: string | null
         }
         Insert: {
           country?: string | null
@@ -203,6 +501,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          provider?: string | null
+          provider_team_id?: string | null
         }
         Update: {
           country?: string | null
@@ -210,6 +510,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          provider?: string | null
+          provider_team_id?: string | null
         }
         Relationships: []
       }

@@ -1,4 +1,4 @@
-import { createClient } from "../../../supabase/server";
+import { createClient } from "@/supabase/server";
 import { KPICards } from "@/components/dashboard/kpi-cards";
 import { RecentReportsTable } from "@/components/dashboard/recent-reports-table";
 import { Button } from "@/components/ui/button";
