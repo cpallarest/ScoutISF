@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MetadataForm } from "./metadata-form";
 import { TacticalField } from "./tactical-field";
 import { PlayerEvaluation } from "./player-evaluation";
-import { createClient } from "../../../supabase/client";
+import { createClient } from "@/supabase/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -18,26 +18,33 @@ interface ReportEditorProps {
   initialData?: any;
 }
 
-export function ReportEditor({ teams, competitions, userId, initialData }: ReportEditorProps) {
+export function ReportEditor({
+  teams,
+  competitions,
+  userId,
+  initialData,
+}: ReportEditorProps) {
   const [step, setStep] = useState("metadata");
   const [reportId, setReportId] = useState(initialData?.id || null);
-  const [reportData, setReportData] = useState(initialData || {
-    match_date: new Date().toISOString().split('T')[0],
-    home_team_id: "",
-    away_team_id: "",
-    competition_id: "",
-    home_score: 0,
-    away_score: 0,
-    halftime_home_score: 0,
-    halftime_away_score: 0,
-    venue: "",
-    referee: "",
-    conditions: "",
-    home_system: "",
-    away_system: "",
-    status: "draft",
-    lineup_data: []
-  });
+  const [reportData, setReportData] = useState(
+    initialData || {
+      match_date: new Date().toISOString().split("T")[0],
+      home_team_id: "",
+      away_team_id: "",
+      competition_id: "",
+      home_score: 0,
+      away_score: 0,
+      halftime_home_score: 0,
+      halftime_away_score: 0,
+      venue: "",
+      referee: "",
+      conditions: "",
+      home_system: "",
+      away_system: "",
+      status: "draft",
+      lineup_data: [],
+    },
+  );
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -47,12 +54,21 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
     setSaving(true);
     try {
       const dataToSave = { ...reportData, ...data, user_id: userId };
-      
+
       let result;
       if (reportId) {
-        result = await supabase.from("reports").update(dataToSave).eq("id", reportId).select().single();
+        result = await supabase
+          .from("reports")
+          .update(dataToSave)
+          .eq("id", reportId)
+          .select()
+          .single();
       } else {
-        result = await supabase.from("reports").insert(dataToSave).select().single();
+        result = await supabase
+          .from("reports")
+          .insert(dataToSave)
+          .select()
+          .single();
       }
 
       if (result.error) throw result.error;
@@ -66,7 +82,11 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
         toast({ title: "Saved", description: "Report saved successfully" });
       }
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -74,23 +94,46 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
 
   const handlePublish = async () => {
     // Validate Metadata
-    if (!reportData.match_date || !reportData.home_team_id || !reportData.away_team_id || !reportData.competition_id) {
-      toast({ title: "Error", description: "Please fill in all match metadata", variant: "destructive" });
+    if (
+      !reportData.match_date ||
+      !reportData.home_team_id ||
+      !reportData.away_team_id ||
+      !reportData.competition_id
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all match metadata",
+        variant: "destructive",
+      });
       return;
     }
 
     // Validate Evaluations
     if (reportId) {
-      const { data: evaluations } = await supabase.from("report_players").select("*").eq("report_id", reportId);
-      
+      const { data: evaluations } = await supabase
+        .from("report_players")
+        .select("*")
+        .eq("report_id", reportId);
+
       if (!evaluations || evaluations.length === 0) {
-        toast({ title: "Error", description: "Please add at least one player evaluation", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Please add at least one player evaluation",
+          variant: "destructive",
+        });
         return;
       }
 
-      const incompleteEvaluations = evaluations.filter((e: any) => !e.grade || !e.verdict || !e.comment || !e.position_in_match);
+      const incompleteEvaluations = evaluations.filter(
+        (e: any) =>
+          !e.grade || !e.verdict || !e.comment || !e.position_in_match,
+      );
       if (incompleteEvaluations.length > 0) {
-        toast({ title: "Error", description: `Please complete all fields for all players (${incompleteEvaluations.length} incomplete)`, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: `Please complete all fields for all players (${incompleteEvaluations.length} incomplete)`,
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -106,11 +149,17 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
           {initialData ? "Edit Report" : "New Report"}
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
           <Button onClick={() => handleSave(reportData)} disabled={saving}>
             {saving ? "Saving..." : "Save Draft"}
           </Button>
-          <Button variant="default" className="bg-primary text-primary-foreground" onClick={handlePublish}>
+          <Button
+            variant="default"
+            className="bg-primary text-primary-foreground"
+            onClick={handlePublish}
+          >
             Publish
           </Button>
         </div>
@@ -119,40 +168,46 @@ export function ReportEditor({ teams, competitions, userId, initialData }: Repor
       <Tabs value={step} onValueChange={setStep} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="metadata">1. Match Metadata</TabsTrigger>
-          <TabsTrigger value="tactical" disabled={!reportId}>2. Tactical Field</TabsTrigger>
-          <TabsTrigger value="evaluation" disabled={!reportId}>3. Player Evaluation</TabsTrigger>
+          <TabsTrigger value="tactical" disabled={!reportId}>
+            2. Tactical Field
+          </TabsTrigger>
+          <TabsTrigger value="evaluation" disabled={!reportId}>
+            3. Player Evaluation
+          </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="metadata" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <MetadataForm 
-                teams={teams} 
-                competitions={competitions} 
-                data={reportData} 
-                onSave={(data) => handleSave(data, "tactical")} 
+              <MetadataForm
+                teams={teams}
+                competitions={competitions}
+                data={reportData}
+                onSave={(data) => handleSave(data, "tactical")}
               />
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="tactical" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <TacticalField 
-                data={reportData} 
+              <TacticalField
+                data={reportData}
                 matchId={reportData.match_id}
-                onSave={(data) => handleSave({ lineup_data: data }, "evaluation")} 
+                onSave={(data) =>
+                  handleSave({ lineup_data: data }, "evaluation")
+                }
               />
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="evaluation" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <PlayerEvaluation 
-                reportId={reportId} 
+              <PlayerEvaluation
+                reportId={reportId}
                 onComplete={() => router.push("/dashboard/reports")}
               />
             </CardContent>

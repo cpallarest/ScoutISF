@@ -1,11 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "../../../supabase/client";
+import { createClient } from "@/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
@@ -15,7 +28,10 @@ interface PlayerEvaluationProps {
   onComplete: () => void;
 }
 
-export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps) {
+export function PlayerEvaluation({
+  reportId,
+  onComplete,
+}: PlayerEvaluationProps) {
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,7 +70,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
 
   const addPlayerToReport = async (player: any) => {
     // Check if already added
-    if (evaluations.some(e => e.player_id === player.id)) {
+    if (evaluations.some((e) => e.player_id === player.id)) {
       setSearchQuery("");
       setSearchResults([]);
       return;
@@ -68,7 +84,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
         position_in_match: "",
         grade: null,
         verdict: null,
-        comment: ""
+        comment: "",
       })
       .select("*, player:players(*)")
       .single();
@@ -82,8 +98,10 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
 
   const updateEvaluation = async (id: string, field: string, value: any) => {
     // Optimistic update
-    setEvaluations(evaluations.map(e => e.id === id ? { ...e, [field]: value } : e));
-    
+    setEvaluations(
+      evaluations.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
+    );
+
     await supabase
       .from("report_players")
       .update({ [field]: value })
@@ -91,7 +109,7 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
   };
 
   const removeEvaluation = async (id: string) => {
-    setEvaluations(evaluations.filter(e => e.id !== id));
+    setEvaluations(evaluations.filter((e) => e.id !== id));
     await supabase.from("report_players").delete().eq("id", id);
   };
 
@@ -102,8 +120,8 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
           <Label>Add Player</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search player by name..." 
+            <Input
+              placeholder="Search player by name..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => searchPlayers(e.target.value)}
@@ -111,14 +129,16 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
           </div>
           {searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 bg-popover border border-border rounded-md mt-1 z-50 shadow-lg">
-              {searchResults.map(player => (
-                <div 
+              {searchResults.map((player) => (
+                <div
                   key={player.id}
                   className="p-2 hover:bg-muted cursor-pointer flex justify-between items-center"
                   onClick={() => addPlayerToReport(player)}
                 >
                   <span>{player.name}</span>
-                  <span className="text-xs text-muted-foreground">{player.position}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {player.position}
+                  </span>
                 </div>
               ))}
             </div>
@@ -144,56 +164,80 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
               <TableRow key={evaluation.id}>
                 <TableCell className="font-medium">
                   {evaluation.player.name}
-                  <div className="text-xs text-muted-foreground">{evaluation.player.position}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {evaluation.player.position}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Input 
-                    className="h-8" 
-                    value={evaluation.position_in_match || ""} 
-                    onChange={(e) => updateEvaluation(evaluation.id, "position_in_match", e.target.value)}
+                  <Input
+                    className="h-8"
+                    value={evaluation.position_in_match || ""}
+                    onChange={(e) =>
+                      updateEvaluation(
+                        evaluation.id,
+                        "position_in_match",
+                        e.target.value,
+                      )
+                    }
                     placeholder="Pos"
                   />
                 </TableCell>
                 <TableCell>
-                  <Select 
-                    value={evaluation.grade || ""} 
-                    onValueChange={(val) => updateEvaluation(evaluation.id, "grade", val)}
+                  <Select
+                    value={evaluation.grade || ""}
+                    onValueChange={(val) =>
+                      updateEvaluation(evaluation.id, "grade", val)
+                    }
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue placeholder="-" />
                     </SelectTrigger>
                     <SelectContent>
-                      {["A", "B", "C", "D"].map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      {["A", "B", "C", "D"].map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {g}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Select 
-                    value={evaluation.verdict || ""} 
-                    onValueChange={(val) => updateEvaluation(evaluation.id, "verdict", val)}
+                  <Select
+                    value={evaluation.verdict || ""}
+                    onValueChange={(val) =>
+                      updateEvaluation(evaluation.id, "verdict", val)
+                    }
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue placeholder="-" />
                     </SelectTrigger>
                     <SelectContent>
-                      {["Descartar", "Seguir", "Interesante", "Fichar"].map(v => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
+                      {["Descartar", "Seguir", "Interesante", "Fichar"].map(
+                        (v) => (
+                          <SelectItem key={v} value={v}>
+                            {v}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Textarea 
-                    className="min-h-[60px] resize-none" 
+                  <Textarea
+                    className="min-h-[60px] resize-none"
                     placeholder="Add comments..."
                     value={evaluation.comment || ""}
-                    onChange={(e) => updateEvaluation(evaluation.id, "comment", e.target.value)}
+                    onChange={(e) =>
+                      updateEvaluation(evaluation.id, "comment", e.target.value)
+                    }
                   />
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => removeEvaluation(evaluation.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeEvaluation(evaluation.id)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
@@ -201,7 +245,10 @@ export function PlayerEvaluation({ reportId, onComplete }: PlayerEvaluationProps
             ))}
             {evaluations.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No players evaluated yet. Add players to start evaluating.
                 </TableCell>
               </TableRow>
