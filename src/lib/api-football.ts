@@ -138,66 +138,56 @@ export async function syncTeams(competitionId: string, season: string) {
     .from("competitions")
     .select("provider_competition_id")
     .eq("id", competitionId)
-    .maybeSingle();
+    .single();
 
   if (compErr) throw compErr;
   if (!comp?.provider_competition_id)
     throw new Error("Competition not linked to provider");
 
-  const leagueId = String(comp.provider_competition_id);
-  const cacheKey = `teams_${leagueId}_${season}`;
+  const cacheKey = `teams_${comp.provider_competition_id}_${season}`;
 
   let items: any[] = [];
   const cached = await getCachedData(supabase, cacheKey);
-  if (Array.isArray(cached) && cached.length) {
+  if (cached && Array.isArray(cached)) {
     items = cached;
-    console.log(`[syncTeams] cache hit: ${items.length}`);
   } else {
-    const json = await fetchFromApi("/teams", { league: leagueId, season });
-    items = asArrayResponse(json);
-    console.log(`[syncTeams] api items: ${items.length}`);
-
+    const json = await fetchFromApi("/teams", {
+      league: String(comp.provider_competition_id),
+      season: String(season),
+    });
+    items = Array.isArray(json?.response) ? json.response : [];
     if (items.length) {
       await setCachedData(supabase, cacheKey, items, 7 * 24 * 60 * 60);
     }
   }
 
-  if (!items.length) return [];
-
   const out: any[] = [];
 
   for (const item of items) {
-    try {
-      const team = item?.team;
-      const teamId = team?.id != null ? String(team.id) : "";
-      const name = team?.name ? String(team.name) : "";
-      if (!teamId || !name) continue;
+    const team = item?.team;
+    if (!team?.id) continue;
 
-      const payload = {
-        provider: "api_football",
-        provider_team_id: teamId,
-        name,
-        country: team?.country ? String(team.country) : "",
-        logo_url: team?.logo ? String(team.logo) : null,
-      };
+    const payload = {
+      provider: "api_football",
+      provider_team_id: String(team.id),
+      name: team.name ?? null,
+      country: team.country ?? null,
+      logo_url: team.logo ?? null,
+    };
 
-      const { data, error } = await supabase
-        .from("teams")
-        .upsert(payload, { onConflict: "provider,provider_team_id" })
-        .select("*")
-        .maybeSingle();
+    const { data: upserted, error } = await supabase
+      .from("teams")
+      .upsert(payload, { onConflict: "provider,provider_team_id" })
+      .select("*")
+      .maybeSingle();
 
-      if (error) {
-        console.error(`[syncTeams] upsert error (${name})`, error);
-        continue;
-      }
-      if (data) out.push(data);
-    } catch (e) {
-      console.error("[syncTeams] item error", e);
+    if (error) {
+      console.error(`[syncTeams] upsert error (${team?.name})`, error);
+      continue;
     }
+    if (upserted) out.push(upserted);
   }
 
-  console.log(`[syncTeams] upserted: ${out.length}`);
   return out;
 }
 
