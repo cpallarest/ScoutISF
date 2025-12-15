@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await syncLineups(fixtureId);
-    return NextResponse.json(result);
+    return NextResponse.json({ 
+      success: true, 
+      count: result.status === "success" ? 1 : 0, 
+      data: result 
+    });
   } catch (error: any) {
     console.error("Sync lineups error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

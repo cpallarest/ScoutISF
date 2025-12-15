@@ -1,4 +1,4 @@
-import { createClient } from "@/supabase/server";
+import { createAdminClient } from "@/supabase/admin";
 import { Database } from "@/types/database.types";
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
@@ -8,16 +8,19 @@ if (!API_KEY) {
   console.warn("API_FOOTBALL_KEY is not set");
 }
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+type SupabaseClient = Awaited<ReturnType<typeof createAdminClient>>;
 
 async function fetchFromApi(endpoint: string, params: Record<string, string>) {
   const url = new URL(`${BASE_URL}${endpoint}`);
   Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
 
+  console.log(`[API-Football] Fetching ${url.toString()}`);
+
   const response = await fetch(url.toString(), {
     headers: {
       "x-apisports-key": API_KEY!,
     },
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -50,42 +53,53 @@ async function setCachedData(supabase: SupabaseClient, key: string, data: any, d
 }
 
 export async function syncCompetitions(season: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const cacheKey = `competitions_${season}`;
   
   let data = await getCachedData(supabase, cacheKey);
+  let fromCache = true;
+
   if (!data) {
+    fromCache = false;
     const response = await fetchFromApi("/leagues", { season });
     data = response.response;
     await setCachedData(supabase, cacheKey, data, 7 * 24 * 60 * 60); // 7 days
   }
 
   const competitions = [];
-  for (const item of (data as any[])) {
-    // Filter allowlist logic could go here, for now we sync all or maybe just top ones?
-    // The prompt says "Fetch competitions using an allowlist". 
-    // Since I don't have an allowlist, I'll just sync them all but maybe limit to major ones if needed.
-    // For now, I'll sync all returned by the API for the season.
-    
+  const items = Array.isArray(data) ? data : [];
+  
+  console.log(`[Sync] Competitions: Received ${items.length} items (Cache: ${fromCache})`);
+
+  for (const item of items) {
     const { league, country } = item;
     
-    const { data: upserted } = await supabase.from("competitions").upsert({
+    if (!league.id) continue;
+
+    const { data: upserted, error } = await supabase.from("competitions").upsert({
       provider: "api_football",
       provider_competition_id: league.id.toString(),
       name: league.name,
       country: country.name,
       season: season,
       is_active: league.active,
-    }, { onConflict: "provider_competition_id" }).select().single();
+    }, { 
+      onConflict: "provider,provider_competition_id,season" 
+    }).select().single();
     
-    if (upserted) competitions.push(upserted);
+    if (error) {
+      console.error(`[Sync] Error upserting competition ${league.name}:`, error);
+    } else if (upserted) {
+      competitions.push(upserted);
+    }
   }
   
+  console.log(`[Sync] Competitions: Successfully upserted ${competitions.length} competitions`);
   return competitions;
 }
 
 export async function syncTeams(competitionId: string, season: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   
   // Get provider_competition_id
   const { data: comp } = await supabase.from("competitions").select("provider_competition_id").eq("id", competitionId).single();
@@ -101,10 +115,12 @@ export async function syncTeams(competitionId: string, season: string) {
   }
 
   const teams = [];
-  for (const item of (data as any[])) {
+  const items = Array.isArray(data) ? data : [];
+
+  for (const item of items) {
     const { team } = item;
     
-    const { data: upserted } = await supabase.from("teams").upsert({
+    const { data: upserted, error } = await supabase.from("teams").upsert({
       provider: "api_football",
       provider_team_id: team.id.toString(),
       name: team.name,
@@ -112,14 +128,18 @@ export async function syncTeams(competitionId: string, season: string) {
       logo_url: team.logo,
     }, { onConflict: "provider_team_id" }).select().single();
     
-    if (upserted) teams.push(upserted);
+    if (error) {
+      console.error(`[Sync] Error upserting team ${team.name}:`, error);
+    } else if (upserted) {
+      teams.push(upserted);
+    }
   }
   
   return teams;
 }
 
 export async function syncFixtures(competitionId: string, season: string, from?: string, to?: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   
   const { data: comp } = await supabase.from("competitions").select("provider_competition_id").eq("id", competitionId).single();
   if (!comp?.provider_competition_id) throw new Error("Competition not linked to provider");
@@ -139,7 +159,9 @@ export async function syncFixtures(competitionId: string, season: string, from?:
   }
 
   const fixtures = [];
-  for (const item of (data as any[])) {
+  const items = Array.isArray(data) ? data : [];
+
+  for (const item of items) {
     const { fixture, teams, goals, score } = item;
     
     // Resolve team IDs
@@ -151,7 +173,7 @@ export async function syncFixtures(competitionId: string, season: string, from?:
     const status = fixture.status.short === "FT" ? "finished" : 
                    fixture.status.short === "1H" || fixture.status.short === "2H" || fixture.status.short === "HT" ? "live" : "scheduled";
 
-    const { data: upserted } = await supabase.from("matches").upsert({
+    const { data: upserted, error } = await supabase.from("matches").upsert({
       provider: "api_football",
       provider_fixture_id: fixture.id.toString(),
       competition_id: competitionId,
@@ -167,14 +189,18 @@ export async function syncFixtures(competitionId: string, season: string, from?:
       ht_away_score: score.halftime.away,
     }, { onConflict: "provider_fixture_id" }).select().single();
     
-    if (upserted) fixtures.push(upserted);
+    if (error) {
+      console.error(`[Sync] Error upserting fixture ${fixture.id}:`, error);
+    } else if (upserted) {
+      fixtures.push(upserted);
+    }
   }
   
   return fixtures;
 }
 
 export async function syncLineups(fixtureId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   
   const { data: match } = await supabase.from("matches").select("*").eq("id", fixtureId).single();
   if (!match?.provider_fixture_id) throw new Error("Match not linked to provider");
@@ -207,16 +233,6 @@ export async function syncLineups(fixtureId: string) {
       let playerId = await findOrCreatePlayer(supabase, player);
       
       if (playerId) {
-        // Parse grid position (e.g. "1:1") to x,y coordinates if possible, or just store as is?
-        // The prompt says "x (numeric), y (numeric)". API-Football gives "grid": "1:1".
-        // I'll need a mapper for grid to x/y. For now I'll leave x/y null or try to map.
-        // Simple mapping: grid "R:C" -> x, y.
-        // API-Football grid is usually "Row:Col". 
-        // Let's just store null for x/y for now as the prompt says "Drag & drop positioning" is in the UI.
-        // But "Starting XI is auto-filled when lineups exist".
-        // If I don't provide X/Y, they will pile up.
-        // I'll try to provide basic X/Y based on grid.
-        
         const { x, y } = mapGridToCoordinates(player.grid);
 
         await supabase.from("lineup_positions").insert({
@@ -241,12 +257,7 @@ async function findOrCreatePlayer(supabase: SupabaseClient, apiPlayer: any): Pro
   const { data: byId } = await supabase.from("players").select("id").eq("provider_player_id", apiPlayer.id.toString()).single();
   if (byId) return byId.id;
 
-  // 2. Try Name (and DOB if we had it, but lineup endpoint might not give DOB)
-  // Lineup endpoint gives: id, name, number, pos, grid. No DOB.
-  // So we match by Name only? That's risky.
-  // But the prompt says "Try to match existing global players by: provider_player_id, name + DOB (if available)".
-  // If DOB is not available, maybe just Name? Or create new?
-  // I'll try Name match.
+  // 2. Try Name
   const { data: byName } = await supabase.from("players").select("id").ilike("name", apiPlayer.name).limit(1).single();
   if (byName) {
     // Update provider ID
@@ -260,7 +271,6 @@ async function findOrCreatePlayer(supabase: SupabaseClient, apiPlayer: any): Pro
     provider: "api_football",
     provider_player_id: apiPlayer.id.toString(),
     position: apiPlayer.pos,
-    // No DOB available in lineup response
   }).select("id").single();
 
   return newPlayer?.id || null;
@@ -269,47 +279,15 @@ async function findOrCreatePlayer(supabase: SupabaseClient, apiPlayer: any): Pro
 function mapGridToCoordinates(grid: string | null): { x: number, y: number } {
   if (!grid) return { x: 50, y: 50 };
   
-  // Format "Row:Col" e.g. "1:1" (GK), "2:1" (DEF), etc.
-  // API-Football grid: 
-  // GK is usually 1:1.
-  // Defenders 2:x.
-  // Midfielders 3:x.
-  // Forwards 4:x.
-  // This varies by formation.
-  
   const parts = grid.split(":");
   if (parts.length !== 2) return { x: 50, y: 50 };
   
   const row = parseInt(parts[0]);
   const col = parseInt(parts[1]);
   
-  // Map to 0-100 percentage
-  // Y is usually length (goal to goal). X is width.
-  // In our tactical field:
-  // Home team: GK at left (0% x)? Or bottom?
-  // The tactical field in `tactical-field.tsx` seems to be vertical or horizontal?
-  // "aspect-[2/3]" suggests vertical pitch.
-  // "left: ${p.x}%, top: ${p.y}%"
-  // Usually Y is 0-100 (top to bottom).
-  // Let's assume Home team plays bottom to top or top to bottom?
-  // Standard: Home GK at bottom (100% Y) or top (0% Y)?
-  // Let's assume Top-Down for Home?
-  // Actually, let's just give rough estimates.
-  
-  // Row 1 (GK) -> Y=90%
-  // Row 2 (Def) -> Y=75%
-  // Row 3 (Mid) -> Y=50%
-  // Row 4 (Att) -> Y=25%
-  
-  // Col: 1 is left, higher is right?
-  // We need to know how many cols in that row to center them.
-  // Without knowing total cols, we can't center perfectly.
-  // Let's just map Col 1 -> 50%, Col 2 -> 20%, Col 3 -> 80%?
-  // This is hard to guess.
-  // I'll just put them in a pile based on row.
-  
-  const y = 90 - ((row - 1) * 20); // 90, 70, 50, 30...
-  const x = 10 + (col * 20); // 30, 50, 70...
+  // Simple mapping logic
+  const y = 90 - ((row - 1) * 20); 
+  const x = 10 + (col * 20); 
   
   return { x, y };
 }
