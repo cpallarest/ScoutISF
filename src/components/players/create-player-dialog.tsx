@@ -25,21 +25,18 @@ import { createClient } from "@/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 
-export function CreatePlayerDialog({
-  onPlayerCreated,
-}: {
-  onPlayerCreated?: (player: any) => void;
-}) {
+export function CreatePlayerDialog({ onPlayerCreated }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
   const [nationality, setNationality] = useState("");
-  const [foot, setFoot] = useState<string>("");
+  const [foot, setFoot] = useState(""); // <- sin <string>
   const [position, setPosition] = useState("");
 
   const [checking, setChecking] = useState(false);
-  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [duplicates, setDuplicates] = useState([]); // <- sin any[]
   const [showDuplicates, setShowDuplicates] = useState(false);
+
   const supabase = createClient();
   const { toast } = useToast();
   const router = useRouter();
@@ -48,7 +45,6 @@ export function CreatePlayerDialog({
     if (!name) return;
     setChecking(true);
 
-    // Simple heuristic: Name similarity
     const { data } = await supabase
       .from("players")
       .select("*")
@@ -66,13 +62,17 @@ export function CreatePlayerDialog({
   };
 
   const createPlayer = async () => {
+    // Normaliza foot para evitar valores raros
+    const normalizedFoot =
+      foot === "Left" || foot === "Right" || foot === "Both" ? foot : null;
+
     const { data, error } = await supabase
       .from("players")
       .insert({
         name,
         dob: dob || null,
         nationality: nationality || null,
-        foot: (foot as "Left" | "Right" | "Both") || null,
+        foot: normalizedFoot,
         position: position || null,
       })
       .select()
@@ -122,6 +122,7 @@ export function CreatePlayerDialog({
           Create Player
         </Button>
       </DialogTrigger>
+
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create New Player</DialogTitle>
