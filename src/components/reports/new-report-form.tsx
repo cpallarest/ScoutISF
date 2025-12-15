@@ -27,7 +27,7 @@ export function NewReportForm() {
   const [selectedSeason, setSelectedSeason] = useState<string>("2023");
   const [selectedFixture, setSelectedFixture] = useState<string>("");
 
-  // 👇 nuevo: buscador
+  // buscador de competiciones
   const [competitionQuery, setCompetitionQuery] = useState("");
 
   const router = useRouter();
@@ -35,6 +35,7 @@ export function NewReportForm() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // reset al cambiar temporada
     setSelectedCompetition("");
     setSelectedFixture("");
     setFixtures([]);
@@ -44,7 +45,12 @@ export function NewReportForm() {
   }, [selectedSeason]);
 
   useEffect(() => {
-    if (selectedCompetition && selectedSeason) {
+    // al elegir competición, carga fixtures desde DB (si existen)
+    if (
+      selectedCompetition &&
+      selectedSeason &&
+      selectedCompetition !== "none"
+    ) {
       fetchFixtures();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,23 +130,32 @@ export function NewReportForm() {
     setLoading(false);
   };
 
+  // ✅ FIX: primero sync TEAMS y luego sync FIXTURES (si no, fixtures se quedan en 0)
   const syncFixtures = async () => {
-    if (!selectedCompetition) return;
+    if (!selectedCompetition || selectedCompetition === "none") return;
 
     setSyncing(true);
     try {
-      const res = await fetch(
+      // 1) Teams
+      const teamsRes = await fetch(
+        `/api/sync/teams?competitionId=${selectedCompetition}&season=${selectedSeason}`,
+      );
+      const teamsJson = await teamsRes.json().catch(() => null);
+      if (!teamsRes.ok)
+        throw new Error(teamsJson?.error || "Sync teams failed");
+
+      // 2) Fixtures
+      const fixRes = await fetch(
         `/api/sync/fixtures?competitionId=${selectedCompetition}&season=${selectedSeason}`,
       );
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok) throw new Error(json?.error || "Sync failed");
+      const fixJson = await fixRes.json().catch(() => null);
+      if (!fixRes.ok) throw new Error(fixJson?.error || "Sync fixtures failed");
 
       await fetchFixtures();
 
       toast({
         title: "Success",
-        description: `Fixtures synced (${json?.count ?? "?"})`,
+        description: `Teams synced (${teamsJson?.count ?? "?"}) · Fixtures synced (${fixJson?.count ?? "?"})`,
       });
     } catch (error: any) {
       toast({
@@ -212,13 +227,13 @@ export function NewReportForm() {
       return;
     }
 
+    // sync lineups "fire-and-forget"
     fetch(`/api/sync/lineups?fixtureId=${fixture.id}`).catch(() => {});
     router.push(`/dashboard/reports/${data.id}/edit`);
   };
 
-  const seasonOptions = ["2023", "2022", "2021"];
+  const seasonOptions = ["2023", "2022", "2021"]; // plan Free: 2021–2023
 
-  // 👇 nuevo: competiciones filtradas (nombre + país)
   const filteredCompetitions = useMemo(() => {
     const q = competitionQuery.trim().toLowerCase();
     if (!q) return competitions;
@@ -257,7 +272,6 @@ export function NewReportForm() {
           <div className="space-y-2">
             <Label>Competition</Label>
 
-            {/* 👇 nuevo: buscador */}
             <Input
               value={competitionQuery}
               onChange={(e) => setCompetitionQuery(e.target.value)}
@@ -305,7 +319,6 @@ export function NewReportForm() {
               </Button>
             </div>
 
-            {/* 👇 micro feedback */}
             <div className="text-xs text-muted-foreground">
               Showing {Math.min(filteredCompetitions.length, 200)} of{" "}
               {filteredCompetitions.length} matches (from {competitions.length}{" "}
@@ -332,7 +345,7 @@ export function NewReportForm() {
                 <SelectContent className="max-h-72 overflow-y-auto">
                   {fixtures.length === 0 ? (
                     <SelectItem value="none" disabled>
-                      No fixtures found
+                      No fixtures found (try Sync)
                     </SelectItem>
                   ) : (
                     fixtures.map((fixture) => (
