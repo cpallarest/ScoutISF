@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,8 +24,11 @@ export function NewReportForm() {
   const [syncing, setSyncing] = useState(false);
 
   const [selectedCompetition, setSelectedCompetition] = useState<string>("");
-  const [selectedSeason, setSelectedSeason] = useState<string>("2023"); // plan Free: 2021–2023
+  const [selectedSeason, setSelectedSeason] = useState<string>("2023");
   const [selectedFixture, setSelectedFixture] = useState<string>("");
+
+  // 👇 nuevo: buscador
+  const [competitionQuery, setCompetitionQuery] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
@@ -34,6 +38,7 @@ export function NewReportForm() {
     setSelectedCompetition("");
     setSelectedFixture("");
     setFixtures([]);
+    setCompetitionQuery("");
     fetchCompetitions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeason]);
@@ -77,9 +82,7 @@ export function NewReportForm() {
       );
       const json = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(json?.error || "Sync failed");
-      }
+      if (!res.ok) throw new Error(json?.error || "Sync failed");
 
       await fetchCompetitions();
 
@@ -131,9 +134,7 @@ export function NewReportForm() {
       );
       const json = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(json?.error || "Sync failed");
-      }
+      if (!res.ok) throw new Error(json?.error || "Sync failed");
 
       await fetchFixtures();
 
@@ -217,6 +218,18 @@ export function NewReportForm() {
 
   const seasonOptions = ["2023", "2022", "2021"];
 
+  // 👇 nuevo: competiciones filtradas (nombre + país)
+  const filteredCompetitions = useMemo(() => {
+    const q = competitionQuery.trim().toLowerCase();
+    if (!q) return competitions;
+
+    return competitions.filter((c) => {
+      const name = String(c?.name ?? "").toLowerCase();
+      const country = String(c?.country ?? "").toLowerCase();
+      return name.includes(q) || country.includes(q);
+    });
+  }, [competitions, competitionQuery]);
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
@@ -243,6 +256,15 @@ export function NewReportForm() {
 
           <div className="space-y-2">
             <Label>Competition</Label>
+
+            {/* 👇 nuevo: buscador */}
+            <Input
+              value={competitionQuery}
+              onChange={(e) => setCompetitionQuery(e.target.value)}
+              placeholder="Search by competition or country (e.g. Spain, La Liga)"
+              className="mb-2"
+            />
+
             <div className="flex gap-2">
               <Select
                 value={selectedCompetition}
@@ -256,12 +278,12 @@ export function NewReportForm() {
                 </SelectTrigger>
 
                 <SelectContent className="max-h-72 overflow-y-auto">
-                  {competitions.length === 0 ? (
+                  {filteredCompetitions.length === 0 ? (
                     <SelectItem value="none" disabled>
-                      No competitions found
+                      No competitions match your search
                     </SelectItem>
                   ) : (
-                    competitions.map((comp) => (
+                    filteredCompetitions.slice(0, 200).map((comp) => (
                       <SelectItem key={comp.id} value={comp.id}>
                         {comp.name} ({comp.country})
                       </SelectItem>
@@ -281,6 +303,13 @@ export function NewReportForm() {
                   className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
                 />
               </Button>
+            </div>
+
+            {/* 👇 micro feedback */}
+            <div className="text-xs text-muted-foreground">
+              Showing {Math.min(filteredCompetitions.length, 200)} of{" "}
+              {filteredCompetitions.length} matches (from {competitions.length}{" "}
+              total)
             </div>
           </div>
         </div>
