@@ -31,7 +31,6 @@ export function NewReportForm() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // cuando cambia la temporada, resetea selección y recarga competiciones
     setSelectedCompetition("");
     setSelectedFixture("");
     setFixtures([]);
@@ -212,13 +211,11 @@ export function NewReportForm() {
       return;
     }
 
-    // sync lineups "fire-and-forget"
     fetch(`/api/sync/lineups?fixtureId=${fixture.id}`).catch(() => {});
-
     router.push(`/dashboard/reports/${data.id}/edit`);
   };
 
-  const seasonOptions = ["2023", "2022", "2021"]; // plan Free: 2021–2023
+  const seasonOptions = ["2023", "2022", "2021"];
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -234,7 +231,7 @@ export function NewReportForm() {
               <SelectTrigger>
                 <SelectValue placeholder="Select Season" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-72 overflow-y-auto">
                 {seasonOptions.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
@@ -257,7 +254,8 @@ export function NewReportForm() {
                     placeholder={loading ? "Loading..." : "Select Competition"}
                   />
                 </SelectTrigger>
-                <SelectContent>
+
+                <SelectContent className="max-h-72 overflow-y-auto">
                   {competitions.length === 0 ? (
                     <SelectItem value="none" disabled>
                       No competitions found
@@ -301,7 +299,8 @@ export function NewReportForm() {
                     placeholder={loading ? "Loading..." : "Select Match"}
                   />
                 </SelectTrigger>
-                <SelectContent>
+
+                <SelectContent className="max-h-72 overflow-y-auto">
                   {fixtures.length === 0 ? (
                     <SelectItem value="none" disabled>
                       No fixtures found
