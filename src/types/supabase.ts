@@ -20,9 +20,10 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_allowed: boolean | null
           name: string
           provider: string | null
-          provider_competition_id: string | null
+          provider_competition_id: string
           season: string | null
         }
         Insert: {
@@ -30,9 +31,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_allowed?: boolean | null
           name: string
           provider?: string | null
-          provider_competition_id?: string | null
+          provider_competition_id: string
           season?: string | null
         }
         Update: {
@@ -40,9 +42,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_allowed?: boolean | null
           name?: string
           provider?: string | null
-          provider_competition_id?: string | null
+          provider_competition_id?: string
           season?: string | null
         }
         Relationships: []

@@ -8,6 +8,10 @@ if (!API_KEY) console.warn("API_FOOTBALL_KEY is not set");
 
 type SupabaseClient = ReturnType<typeof createAdminClient>;
 
+function isUUID(str: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 function asArrayResponse(json: any): any[] {
   return Array.isArray(json?.response) ? json.response : [];
 }
@@ -134,11 +138,14 @@ export async function syncCompetitions(season: string) {
 export async function syncTeams(competitionId: string, season: string) {
   const supabase = createAdminClient();
 
-  const { data: comp, error: compErr } = await supabase
-    .from("competitions")
-    .select("provider_competition_id")
-    .eq("id", competitionId)
-    .single();
+  let query = supabase.from("competitions").select("provider_competition_id");
+  if (isUUID(competitionId)) {
+    query = query.eq("id", competitionId);
+  } else {
+    query = query.eq("provider_competition_id", competitionId);
+  }
+  
+  const { data: comp, error: compErr } = await query.maybeSingle();
 
   if (compErr) throw compErr;
   if (!comp?.provider_competition_id)
@@ -203,11 +210,14 @@ export async function syncFixtures(
 ) {
   const supabase = createAdminClient();
 
-  const { data: comp, error: compErr } = await supabase
-    .from("competitions")
-    .select("provider_competition_id")
-    .eq("id", competitionId)
-    .maybeSingle();
+  let query = supabase.from("competitions").select("id, provider_competition_id");
+  if (isUUID(competitionId)) {
+    query = query.eq("id", competitionId);
+  } else {
+    query = query.eq("provider_competition_id", competitionId);
+  }
+
+  const { data: comp, error: compErr } = await query.maybeSingle();
 
   if (compErr) throw compErr;
   if (!comp?.provider_competition_id)
@@ -314,4 +324,106 @@ export async function syncFixtures(
 
   console.log(`[syncFixtures] upserted: ${out.length}`);
   return out;
+}
+
+export async function syncLineups(fixtureId: string) {
+  const supabase = createAdminClient();
+  
+  let query = supabase.from("matches").select("*");
+  if (isUUID(fixtureId)) {
+    query = query.eq("id", fixtureId);
+  } else {
+    query = query.eq("provider_fixture_id", fixtureId);
+  }
+  
+  const { data: match } = await query.maybeSingle();
+  if (!match?.provider_fixture_id) throw new Error("Match not linked to provider");
+
+  const cacheKey = `lineups_${match.provider_fixture_id}`;
+  let data = await getCachedData(supabase, cacheKey);
+  
+  if (!data) {
+    const response = await fetchFromApi("/fixtures/lineups", { fixture: match.provider_fixture_id });
+    data = asArrayResponse(response);
+    
+    const isFinished = match.status === "finished";
+    if (data.length > 0) {
+        await setCachedData(supabase, cacheKey, data, isFinished ? 30 * 24 * 60 * 60 : 60 * 60);
+    }
+  }
+
+  if (!data || data.length === 0) return { status: "pending" };
+
+  // Clear existing lineups for this match
+  await supabase.from("lineup_positions").delete().eq("match_id", match.id);
+
+  for (const teamLineup of (data as any[])) {
+    const providerTeamId = teamLineup.team.id.toString();
+    const { data: team } = await supabase.from("teams").select("id").eq("provider_team_id", providerTeamId).maybeSingle();
+    if (!team) continue;
+
+    for (const playerItem of teamLineup.startXI) {
+      const { player } = playerItem;
+      
+      // Find or create player
+      let playerId = await findOrCreatePlayer(supabase, player);
+      
+      if (playerId) {
+        const { x, y } = mapGridToCoordinates(player.grid);
+
+        await supabase.from("lineup_positions").insert({
+          match_id: match.id,
+          team_id: team.id,
+          player_id: playerId,
+          is_starting_xi: true,
+          shirt_number: player.number,
+          position: player.pos,
+          x,
+          y
+        });
+      }
+    }
+  }
+  
+  return { status: "success" };
+}
+
+async function findOrCreatePlayer(supabase: SupabaseClient, apiPlayer: any): Promise<string | null> {
+  // 1. Try provider ID
+  const { data: byId } = await supabase.from("players").select("id").eq("provider_player_id", apiPlayer.id.toString()).maybeSingle();
+  if (byId) return byId.id;
+
+  // 2. Try Name
+  const { data: byName } = await supabase.from("players").select("id").ilike("name", apiPlayer.name).limit(1).maybeSingle();
+  if (byName) {
+    // Update provider ID
+    await supabase.from("players").update({ provider_player_id: apiPlayer.id.toString() }).eq("id", byName.id);
+    return byName.id;
+  }
+
+  // 3. Create new
+  const { data: newPlayer } = await supabase.from("players").insert({
+    name: apiPlayer.name,
+    provider: "api_football",
+    provider_player_id: apiPlayer.id.toString(),
+    position: apiPlayer.pos,
+  }).select("id").single();
+
+  return newPlayer?.id || null;
+}
+
+function mapGridToCoordinates(grid: string | null): { x: number, y: number } {
+  if (!grid) return { x: 50, y: 50 };
+  
+  const parts = grid.split(":");
+  if (parts.length !== 2) return { x: 50, y: 50 };
+  
+  const row = parseInt(parts[0]);
+  const col = parseInt(parts[1]);
+  
+  // Simple mapping logic
+  const y = 90 - ((row - 1) * 20); 
+  const x = 10 + (col * 20); 
+  
+  return { x, y };
 }

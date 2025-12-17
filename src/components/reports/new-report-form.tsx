@@ -64,6 +64,7 @@ export function NewReportForm() {
       .select("*")
       .eq("provider", "api_football")
       .eq("season", selectedSeason)
+      .eq("is_allowed", true)
       .order("name");
 
     if (error) {
@@ -232,6 +233,55 @@ export function NewReportForm() {
     router.push(`/dashboard/reports/${data.id}/edit`);
   };
 
+  const createManualReport = async () => {
+    if (!selectedCompetition || selectedCompetition === "none") return;
+
+    setLoading(true);
+
+    const {
+      data: { user },
+      error: authErr,
+    } = await supabase.auth.getUser();
+
+    if (authErr || !user) {
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: "You must be signed in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("reports")
+      .insert({
+        user_id: user.id,
+        match_date: new Date().toISOString(),
+        competition_id: selectedCompetition,
+        status: "draft",
+        // Manual report defaults
+        home_score: 0,
+        away_score: 0,
+        halftime_home_score: 0,
+        halftime_away_score: 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    router.push(`/dashboard/reports/${data.id}/edit`);
+  };
+
   const seasonOptions = ["2023", "2022", "2021"]; // plan Free: 2021–2023
 
   const filteredCompetitions = useMemo(() => {
@@ -328,59 +378,83 @@ export function NewReportForm() {
         </div>
 
         {selectedCompetition && selectedCompetition !== "none" && (
-          <div className="space-y-2">
-            <Label>Fixture</Label>
-            <div className="flex gap-2">
-              <Select
-                value={selectedFixture}
-                onValueChange={setSelectedFixture}
-                disabled={loading}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue
-                    placeholder={loading ? "Loading..." : "Select Match"}
-                  />
-                </SelectTrigger>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Fixture</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={selectedFixture}
+                  onValueChange={setSelectedFixture}
+                  disabled={loading || fixtures.length === 0}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue
+                      placeholder={
+                        loading
+                          ? "Loading..."
+                          : fixtures.length === 0
+                          ? "No fixtures available"
+                          : "Select Match"
+                      }
+                    />
+                  </SelectTrigger>
 
-                <SelectContent className="max-h-72 overflow-y-auto">
-                  {fixtures.length === 0 ? (
-                    <SelectItem value="none" disabled>
-                      No fixtures found (try Sync)
-                    </SelectItem>
-                  ) : (
-                    fixtures.map((fixture) => (
+                  <SelectContent className="max-h-72 overflow-y-auto">
+                    {fixtures.map((fixture) => (
                       <SelectItem key={fixture.id} value={fixture.id}>
                         {new Date(fixture.kickoff_at).toLocaleDateString()} —{" "}
                         {fixture.home_team?.name} vs {fixture.away_team?.name}
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={syncFixtures}
-                disabled={syncing || !selectedCompetition}
-                title="Sync fixtures"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-                />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={syncFixtures}
+                  disabled={syncing || !selectedCompetition}
+                  title="Sync fixtures"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              </div>
             </div>
+
+            {fixtures.length === 0 && !loading && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                <p className="mb-3 font-medium">
+                  External provider does not supply fixtures for this competition.
+                  Manual reporting is available.
+                </p>
+                <Button
+                  variant="secondary"
+                  onClick={createManualReport}
+                  className="w-full border border-amber-200 bg-white hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-900 dark:hover:bg-amber-800"
+                >
+                  Create Manual Report
+                </Button>
+              </div>
+            )}
+
+            {fixtures.length > 0 && (
+              <Button
+                className="w-full"
+                onClick={createReport}
+                disabled={
+                  !selectedFixture || selectedFixture === "none" || loading
+                }
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Create Report
+              </Button>
+            )}
           </div>
         )}
-
-        <Button
-          className="w-full"
-          onClick={createReport}
-          disabled={!selectedFixture || selectedFixture === "none" || loading}
-        >
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Report
-        </Button>
       </CardContent>
     </Card>
   );
