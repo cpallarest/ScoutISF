@@ -14,17 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/supabase/client";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export function NewReportForm() {
   const [competitions, setCompetitions] = useState<any[]>([]);
   const [fixtures, setFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
 
   const [selectedCompetition, setSelectedCompetition] = useState<string>("");
-  const [selectedSeason, setSelectedSeason] = useState<string>("2023");
+  const [selectedSeason, setSelectedSeason] = useState<string>("25/26");
   const [selectedFixture, setSelectedFixture] = useState<string>("");
 
   // buscador de competiciones
@@ -62,10 +61,9 @@ export function NewReportForm() {
     const { data, error } = await supabase
       .from("competitions")
       .select("*")
-      .eq("provider", "api_football")
       .eq("season", selectedSeason)
-      .eq("is_allowed", true)
-      .order("name");
+      .order("country", { ascending: true })
+      .order("name", { ascending: true });
 
     if (error) {
       toast({
@@ -79,32 +77,6 @@ export function NewReportForm() {
     }
 
     setLoading(false);
-  };
-
-  const syncCompetitions = async () => {
-    setSyncing(true);
-    try {
-      const res = await fetch(
-        `/api/sync/competitions?season=${selectedSeason}`,
-      );
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok) throw new Error(json?.error || "Sync failed");
-
-      await fetchCompetitions();
-
-      toast({
-        title: "Success",
-        description: `Competitions synced (${json?.count ?? "?"})`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to sync competitions",
-        variant: "destructive",
-      });
-    }
-    setSyncing(false);
   };
 
   const fetchFixtures = async () => {
@@ -129,43 +101,6 @@ export function NewReportForm() {
     }
 
     setLoading(false);
-  };
-
-  // ✅ FIX: primero sync TEAMS y luego sync FIXTURES (si no, fixtures se quedan en 0)
-  const syncFixtures = async () => {
-    if (!selectedCompetition || selectedCompetition === "none") return;
-
-    setSyncing(true);
-    try {
-      // 1) Teams
-      const teamsRes = await fetch(
-        `/api/sync/teams?competitionId=${selectedCompetition}&season=${selectedSeason}`,
-      );
-      const teamsJson = await teamsRes.json().catch(() => null);
-      if (!teamsRes.ok)
-        throw new Error(teamsJson?.error || "Sync teams failed");
-
-      // 2) Fixtures
-      const fixRes = await fetch(
-        `/api/sync/fixtures?competitionId=${selectedCompetition}&season=${selectedSeason}`,
-      );
-      const fixJson = await fixRes.json().catch(() => null);
-      if (!fixRes.ok) throw new Error(fixJson?.error || "Sync fixtures failed");
-
-      await fetchFixtures();
-
-      toast({
-        title: "Success",
-        description: `Teams synced (${teamsJson?.count ?? "?"}) · Fixtures synced (${fixJson?.count ?? "?"})`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to sync fixtures",
-        variant: "destructive",
-      });
-    }
-    setSyncing(false);
   };
 
   const createReport = async () => {
@@ -228,8 +163,7 @@ export function NewReportForm() {
       return;
     }
 
-    // sync lineups "fire-and-forget"
-    fetch(`/api/sync/lineups?fixtureId=${fixture.id}`).catch(() => {});
+    // ya sin sync de lineups: todo manual
     router.push(`/dashboard/reports/${data.id}/edit`);
   };
 
@@ -282,7 +216,7 @@ export function NewReportForm() {
     router.push(`/dashboard/reports/${data.id}/edit`);
   };
 
-  const seasonOptions = ["2023", "2022", "2021"]; // plan Free: 2021–2023
+  const seasonOptions = ["25/26", "24/25", "23/24", "22/23"];
 
   const filteredCompetitions = useMemo(() => {
     const q = competitionQuery.trim().toLowerCase();
@@ -302,7 +236,9 @@ export function NewReportForm() {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* Season + Competition */}
         <div className="grid grid-cols-2 gap-4">
+          {/* Season */}
           <div className="space-y-2">
             <Label>Season</Label>
             <Select value={selectedSeason} onValueChange={setSelectedSeason}>
@@ -319,126 +255,98 @@ export function NewReportForm() {
             </Select>
           </div>
 
+          {/* Competition */}
           <div className="space-y-2">
             <Label>Competition</Label>
 
             <Input
               value={competitionQuery}
               onChange={(e) => setCompetitionQuery(e.target.value)}
-              placeholder="Search by competition or country (e.g. Spain, La Liga)"
+              placeholder="Search by competition or country"
               className="mb-2"
             />
 
-            <div className="flex gap-2">
+            <Select
+              value={selectedCompetition}
+              onValueChange={setSelectedCompetition}
+              disabled={loading}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue
+                  placeholder={loading ? "Loading..." : "Select Competition"}
+                />
+              </SelectTrigger>
+
+              <SelectContent className="max-h-72 overflow-y-auto">
+                {filteredCompetitions.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No competitions found
+                  </SelectItem>
+                ) : (
+                  filteredCompetitions.map((comp) => (
+                    <SelectItem key={comp.id} value={comp.id}>
+                      {comp.name} ({comp.country})
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Fixtures + fallback manual */}
+        {selectedCompetition && selectedCompetition !== "none" && (
+          <div className="space-y-4">
+            {/* Selector de partido si existen fixtures en tu DB */}
+            <div className="space-y-2">
+              <Label>Fixture</Label>
               <Select
-                value={selectedCompetition}
-                onValueChange={setSelectedCompetition}
-                disabled={loading}
+                value={selectedFixture}
+                onValueChange={setSelectedFixture}
+                disabled={loading || fixtures.length === 0}
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue
-                    placeholder={loading ? "Loading..." : "Select Competition"}
+                    placeholder={
+                      loading
+                        ? "Loading..."
+                        : fixtures.length === 0
+                          ? "No fixtures available"
+                          : "Select Match"
+                    }
                   />
                 </SelectTrigger>
 
                 <SelectContent className="max-h-72 overflow-y-auto">
-                  {filteredCompetitions.length === 0 ? (
-                    <SelectItem value="none" disabled>
-                      No competitions match your search
+                  {fixtures.map((fixture) => (
+                    <SelectItem key={fixture.id} value={fixture.id}>
+                      {new Date(fixture.kickoff_at).toLocaleDateString()} —{" "}
+                      {fixture.home_team?.name} vs {fixture.away_team?.name}
                     </SelectItem>
-                  ) : (
-                    filteredCompetitions.slice(0, 200).map((comp) => (
-                      <SelectItem key={comp.id} value={comp.id}>
-                        {comp.name} ({comp.country})
-                      </SelectItem>
-                    ))
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={syncCompetitions}
-                disabled={syncing}
-                title="Sync competitions"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-                />
-              </Button>
             </div>
 
-            <div className="text-xs text-muted-foreground">
-              Showing {Math.min(filteredCompetitions.length, 200)} of{" "}
-              {filteredCompetitions.length} matches (from {competitions.length}{" "}
-              total)
-            </div>
-          </div>
-        </div>
-
-        {selectedCompetition && selectedCompetition !== "none" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Fixture</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={selectedFixture}
-                  onValueChange={setSelectedFixture}
-                  disabled={loading || fixtures.length === 0}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue
-                      placeholder={
-                        loading
-                          ? "Loading..."
-                          : fixtures.length === 0
-                          ? "No fixtures available"
-                          : "Select Match"
-                      }
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent className="max-h-72 overflow-y-auto">
-                    {fixtures.map((fixture) => (
-                      <SelectItem key={fixture.id} value={fixture.id}>
-                        {new Date(fixture.kickoff_at).toLocaleDateString()} —{" "}
-                        {fixture.home_team?.name} vs {fixture.away_team?.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={syncFixtures}
-                  disabled={syncing || !selectedCompetition}
-                  title="Sync fixtures"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-                  />
-                </Button>
-              </div>
-            </div>
-
+            {/* Si NO hay fixtures, mostramos aviso + botón de informe manual */}
             {fixtures.length === 0 && !loading && (
               <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
                 <p className="mb-3 font-medium">
-                  External provider does not supply fixtures for this competition.
-                  Manual reporting is available.
+                  There are no fixtures in the database for this competition and
+                  season. You can still create a manual report.
                 </p>
                 <Button
                   variant="secondary"
                   onClick={createManualReport}
                   className="w-full border border-amber-200 bg-white hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-900 dark:hover:bg-amber-800"
+                  disabled={loading}
                 >
                   Create Manual Report
                 </Button>
               </div>
             )}
 
+            {/* Si hay fixtures, botón de crear report usando fixture */}
             {fixtures.length > 0 && (
               <Button
                 className="w-full"

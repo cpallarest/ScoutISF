@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { syncTeams } from "@/lib/api-football";
+import { syncFixturesByTeam } from "@/lib/api-football";
 
 function isUuid(v: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -9,31 +9,31 @@ function isUuid(v: string) {
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
-  const competitionId = sp.get("competitionId");
+  const teamId = sp.get("teamId");
   const season = sp.get("season");
 
-  if (!competitionId || !season) {
+  if (!teamId || !season) {
     return NextResponse.json(
-      { success: false, error: "Missing competitionId or season parameter" },
+      { success: false, error: "Missing teamId or season" },
       { status: 400 },
     );
   }
 
-  if (!isUuid(competitionId)) {
+  if (!isUuid(teamId)) {
     return NextResponse.json(
-      { success: false, error: "competitionId must be a UUID" },
+      { success: false, error: "teamId must be a UUID" },
       { status: 400 },
     );
   }
 
   try {
-    const teams = await syncTeams(competitionId, season);
+    const fixtures = await syncFixturesByTeam(teamId, season);
     return NextResponse.json(
-      { success: true, count: teams.length, data: teams },
+      { success: true, count: fixtures.length, data: fixtures },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error: any) {
-    console.error("Sync teams error:", error);
+    console.error("sync fixtures-by-team error:", error);
     return NextResponse.json(
       { success: false, error: error?.message ?? "Unknown error" },
       { status: 500 },

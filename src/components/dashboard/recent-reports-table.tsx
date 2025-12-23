@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -8,8 +10,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, Printer } from "lucide-react";
+import { Eye, Edit, Printer, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Report {
   id: string;
@@ -26,7 +31,46 @@ interface RecentReportsTableProps {
   reports: Report[];
 }
 
+// 👉 helper para tener SIEMPRE el mismo formato en server y client
+const formatDate = (iso: string) => {
+  if (!iso) return "-";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(iso));
+};
+
 export function RecentReportsTable({ reports }: RecentReportsTableProps) {
+  const supabase = createClient();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm(
+      "¿Seguro que quieres eliminar este informe? Esta acción no se puede deshacer.",
+    );
+    if (!confirmed) return;
+
+    const { error } = await supabase.from("reports").delete().eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Error al eliminar",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Informe eliminado",
+      description: "El informe se ha borrado correctamente.",
+    });
+
+    router.refresh();
+  };
+
   return (
     <div className="rounded-md border border-border bg-card">
       <Table>
@@ -42,29 +86,39 @@ export function RecentReportsTable({ reports }: RecentReportsTableProps) {
         <TableBody>
           {reports.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={5}
+                className="text-center py-8 text-muted-foreground"
+              >
                 No reports found. Create your first report!
               </TableCell>
             </TableRow>
           ) : (
             reports.map((report) => (
-              <TableRow key={report.id} className="border-border hover:bg-muted/50 transition-colors">
+              <TableRow
+                key={report.id}
+                className="border-border hover:bg-muted/50 transition-colors"
+              >
                 <TableCell className="font-mono text-xs text-muted-foreground">
-                  {new Date(report.match_date).toLocaleDateString()}
+                  {formatDate(report.match_date)}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {report.home_team?.name || "Unknown"} <span className="text-muted-foreground">vs</span> {report.away_team?.name || "Unknown"}
+                  {report.home_team?.name || "Unknown"}{" "}
+                  <span className="text-muted-foreground">vs</span>{" "}
+                  {report.away_team?.name || "Unknown"}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{report.competition?.name || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {report.competition?.name || "-"}
+                </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={`font-mono ${
-                      (report.home_score ?? 0) > (report.away_score ?? 0) 
-                        ? "bg-primary/10 text-primary border-primary/20" 
+                      (report.home_score ?? 0) > (report.away_score ?? 0)
+                        ? "bg-primary/10 text-primary border-primary/20"
                         : (report.home_score ?? 0) < (report.away_score ?? 0)
-                        ? "bg-destructive/10 text-destructive border-destructive/20"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                          : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {report.home_score ?? 0} - {report.away_score ?? 0}
@@ -72,20 +126,46 @@ export function RecentReportsTable({ reports }: RecentReportsTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
                       <Link href={`/dashboard/reports/${report.id}`}>
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
                       <Link href={`/dashboard/reports/${report.id}/edit`}>
                         <Edit className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                      <Link href={`/dashboard/reports/${report.id}/print`} target="_blank">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
+                      <Link
+                        href={`/dashboard/reports/${report.id}/print`}
+                        target="_blank"
+                      >
                         <Printer className="h-4 w-4" />
                       </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-500 hover:bg-red-500/10"
+                      onClick={() => handleDelete(report.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
