@@ -30,9 +30,7 @@ export default async function PlayersPage() {
           <h1 className="text-3xl font-bold font-display tracking-tight">
             Players
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Global player database
-          </p>
+          <p className="text-muted-foreground mt-1">Global player database</p>
         </div>
 
         <CreatePlayerDialog />
