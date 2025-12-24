@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -38,24 +39,47 @@ export function PlayersTable({ players }: PlayersTableProps) {
         <TableBody>
           {players.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={5}
+                className="text-center py-8 text-muted-foreground"
+              >
                 No players found.
               </TableCell>
             </TableRow>
           ) : (
             players.map((player) => (
-              <TableRow key={player.id} className="border-border hover:bg-muted/50 transition-colors">
+              <TableRow
+                key={player.id}
+                className="border-border hover:bg-muted/50 transition-colors"
+              >
                 <TableCell className="font-medium">{player.name}</TableCell>
                 <TableCell>{player.position || "-"}</TableCell>
                 <TableCell>{player.nationality || "-"}</TableCell>
                 <TableCell>{player.foot || "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Eye className="h-4 w-4" />
+                    {/* Ver jugador */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
+                      <Link href={`/players/${player.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit className="h-4 w-4" />
+
+                    {/* Editar jugador */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
+                      <Link href={`/players/${player.id}/edit`}>
+                        <Edit className="h-4 w-4" />
+                      </Link>
                     </Button>
                   </div>
                 </TableCell>
