@@ -58,26 +58,14 @@ export function PlayersTable({ players }: PlayersTableProps) {
                 <TableCell>{player.foot || "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {/* Ver jugador */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/players/${player.id}`}>
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/dashboard/players/${player.id}`}>
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>
 
-                    {/* Editar jugador */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/players/${player.id}/edit`}>
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/dashboard/players/${player.id}/edit`}>
                         <Edit className="h-4 w-4" />
                       </Link>
                     </Button>
