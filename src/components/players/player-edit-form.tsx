@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,48 +13,95 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+
+type Team = {
+  id: string;
+  name: string;
+  country: string | null;
+};
+
+type Player = {
+  id: string;
+  name: string;
+  dob: string | null;
+  nationality: string | null;
+  foot: string | null;
+  position: string | null;
+  team_id: string | null;
+};
 
 interface PlayerEditFormProps {
-  player: {
-    id: string;
-    name: string;
-    dob: string | null;
-    nationality: string | null;
-    position: string | null;
-    foot: string | null;
-  };
+  player: Player;
+  teams?: Team[]; // opcional, por si el server page ya los trae
 }
 
-export function PlayerEditForm({ player }: PlayerEditFormProps) {
-  const [name, setName] = useState(player.name ?? "");
-  const [dob, setDob] = useState<string>(
-    player.dob ? player.dob.slice(0, 10) : "",
-  );
-  const [nationality, setNationality] = useState(player.nationality ?? "");
-  const [position, setPosition] = useState(player.position ?? "");
-  const [foot, setFoot] = useState<string>(player.foot ?? "");
-  const [saving, setSaving] = useState(false);
-
+export function PlayerEditForm({
+  player,
+  teams: teamsProp,
+}: PlayerEditFormProps) {
   const supabase = createClient();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [saving, setSaving] = useState(false);
+
+  const [name, setName] = useState(player.name ?? "");
+  const [dob, setDob] = useState(player.dob ?? "");
+  const [nationality, setNationality] = useState(player.nationality ?? "");
+  const [foot, setFoot] = useState<string>(player.foot ?? "");
+  const [position, setPosition] = useState(player.position ?? "");
+  const [teamId, setTeamId] = useState<string>(player.team_id ?? "none");
+
+  const [teams, setTeams] = useState<Team[]>(teamsProp ?? []);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+
+  useEffect(() => {
+    // si no vienen por props, los cargamos
+    if (teamsProp && teamsProp.length) return;
+
+    const loadTeams = async () => {
+      setLoadingTeams(true);
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id,name,country")
+        .order("name");
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        setTeams([]);
+      } else {
+        setTeams((data as Team[]) ?? []);
+      }
+      setLoadingTeams(false);
+    };
+
+    loadTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const teamOptions = useMemo(() => teams ?? [], [teams]);
+
+  const onSave = async () => {
     setSaving(true);
+
+    const payload = {
+      name: name.trim(),
+      dob: dob ? dob : null,
+      nationality: nationality.trim() ? nationality.trim() : null,
+      foot: foot ? foot : null,
+      position: position.trim() ? position.trim() : null,
+      team_id: teamId === "none" ? null : teamId,
+    };
 
     const { error } = await supabase
       .from("players")
-      .update({
-        name,
-        dob: dob || null,
-        nationality: nationality || null,
-        position: position || null,
-        foot: foot || null,
-      })
+      .update(payload)
       .eq("id", player.id);
-
-    setSaving(false);
 
     if (error) {
       toast({
@@ -63,40 +109,31 @@ export function PlayerEditForm({ player }: PlayerEditFormProps) {
         description: error.message,
         variant: "destructive",
       });
+      setSaving(false);
       return;
     }
 
-    toast({
-      title: "Player updated",
-      description: "Changes saved successfully.",
-    });
+    toast({ title: "Saved", description: "Player updated successfully" });
+    setSaving(false);
 
-    router.push(`/dashboard/players/${player.id}`);
     router.refresh();
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-xl mx-auto space-y-6 rounded-md border border-border bg-card p-6"
-    >
-      <h1 className="text-2xl font-bold tracking-tight mb-2">Edit player</h1>
-
+    <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Full name</Label>
+        <Label>Full name</Label>
         <Input
-          id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
+          placeholder="Player name"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dob">Date of birth</Label>
+          <Label>Date of birth</Label>
           <Input
-            id="dob"
             type="date"
             value={dob}
             onChange={(e) => setDob(e.target.value)}
@@ -104,23 +141,22 @@ export function PlayerEditForm({ player }: PlayerEditFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="nationality">Nationality</Label>
+          <Label>Nationality</Label>
           <Input
-            id="nationality"
             value={nationality}
             onChange={(e) => setNationality(e.target.value)}
+            placeholder="Country"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
+          <Label>Position</Label>
           <Input
-            id="position"
             value={position}
             onChange={(e) => setPosition(e.target.value)}
-            placeholder="e.g. Centre Back"
+            placeholder="e.g. CM / RW / GK"
           />
         </div>
 
@@ -139,18 +175,42 @@ export function PlayerEditForm({ player }: PlayerEditFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="space-y-2">
+        <Label>Team</Label>
+        <Select
+          value={teamId}
+          onValueChange={setTeamId}
+          disabled={loadingTeams}
+        >
+          <SelectTrigger>
+            <SelectValue
+              placeholder={loadingTeams ? "Loading..." : "Select team"}
+            />
+          </SelectTrigger>
+          <SelectContent className="max-h-[320px] overflow-y-auto">
+            <SelectItem value="none">No team</SelectItem>
+            {teamOptions.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name}
+                {t.country ? ` (${t.country})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex gap-3 justify-end">
         <Button
-          type="button"
           variant="outline"
-          onClick={() => router.push("/dashboard/players")}
+          onClick={() => router.back()}
+          disabled={saving}
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={saving}>
+        <Button onClick={onSave} disabled={saving || !name.trim()}>
           {saving ? "Saving..." : "Save changes"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }

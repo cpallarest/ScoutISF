@@ -5,6 +5,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TeamsTable } from "@/components/teams/teams-table";
 
+import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
+
 export default async function TeamsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,10 +22,7 @@ export default async function TeamsPage() {
           <h1 className="text-3xl font-bold font-display tracking-tight">Teams</h1>
           <p className="text-muted-foreground mt-1">Manage teams database</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Team
-        </Button>
+        <CreateTeamDialog />
       </div>
 
       <TeamsTable teams={teams as any || []} />

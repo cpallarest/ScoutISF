@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -44,11 +45,15 @@ export function TeamsTable({ teams }: TeamsTableProps) {
                 <TableCell>{team.country || "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Eye className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/dashboard/teams/${team.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/dashboard/teams/${team.id}/edit`}>
+                        <Edit className="h-4 w-4" />
+                      </Link>
                     </Button>
                   </div>
                 </TableCell>

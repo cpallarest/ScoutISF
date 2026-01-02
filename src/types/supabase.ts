@@ -22,8 +22,6 @@ export type Database = {
           is_active: boolean | null
           is_allowed: boolean | null
           name: string
-          provider: string | null
-          provider_competition_id: string
           season: string | null
         }
         Insert: {
@@ -33,8 +31,6 @@ export type Database = {
           is_active?: boolean | null
           is_allowed?: boolean | null
           name: string
-          provider?: string | null
-          provider_competition_id: string
           season?: string | null
         }
         Update: {
@@ -44,8 +40,6 @@ export type Database = {
           is_active?: boolean | null
           is_allowed?: boolean | null
           name?: string
-          provider?: string | null
-          provider_competition_id?: string
           season?: string | null
         }
         Relationships: []
@@ -190,6 +184,24 @@ export type Database = {
           },
         ]
       }
+      p_active: {
+        Row: {
+          created_at: string
+          id: number
+          num: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          num?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          num?: number | null
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           created_at: string | null
@@ -202,7 +214,7 @@ export type Database = {
           nationality: string | null
           position: string | null
           provider: string | null
-          provider_player_id: string | null
+          team_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -216,7 +228,7 @@ export type Database = {
           nationality?: string | null
           position?: string | null
           provider?: string | null
-          provider_player_id?: string | null
+          team_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -230,10 +242,18 @@ export type Database = {
           nationality?: string | null
           position?: string | null
           provider?: string | null
-          provider_player_id?: string | null
+          team_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_cache: {
         Row: {
@@ -405,6 +425,45 @@ export type Database = {
           },
         ]
       }
+      team_competitions: {
+        Row: {
+          competition_id: string
+          created_at: string | null
+          id: string
+          season: string | null
+          team_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string | null
+          id?: string
+          season?: string | null
+          team_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string | null
+          id?: string
+          season?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_competitions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_competitions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_roster_players: {
         Row: {
           created_at: string | null
@@ -496,7 +555,6 @@ export type Database = {
           logo_url: string | null
           name: string
           provider: string | null
-          provider_team_id: string | null
         }
         Insert: {
           country?: string | null
@@ -505,7 +563,6 @@ export type Database = {
           logo_url?: string | null
           name: string
           provider?: string | null
-          provider_team_id?: string | null
         }
         Update: {
           country?: string | null
@@ -514,7 +571,6 @@ export type Database = {
           logo_url?: string | null
           name?: string
           provider?: string | null
-          provider_team_id?: string | null
         }
         Relationships: []
       }
