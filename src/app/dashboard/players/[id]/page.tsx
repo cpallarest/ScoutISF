@@ -46,6 +46,8 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
   if (!player) notFound();
 
+  const teamData = Array.isArray(player.team) ? player.team[0] : player.team;
+
   // ================= REPORTS FOR PLAYER =================
   // NOTA: No ordenamos por created_at para evitar errores si no existe.
   // Si quieres orden por fecha, lo hacemos en el cliente después o añadimos created_at.
@@ -93,14 +95,14 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
             ) : null}
             {player.dob ? <div>DOB: {formatDateDMY(player.dob)}</div> : null}
 
-            {player.team ? (
+            {teamData ? (
               <div>
                 Team:{" "}
                 <Link
                   className="underline"
-                  href={`/dashboard/teams/${player.team.id}`}
+                  href={`/dashboard/teams/${teamData.id}`}
                 >
-                  {player.team.name}
+                  {teamData.name}
                 </Link>
               </div>
             ) : null}

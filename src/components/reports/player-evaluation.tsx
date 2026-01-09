@@ -122,8 +122,8 @@ export function PlayerEvaluation({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4 items-end">
-        <div className="flex-1 relative">
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+        <div className="flex-1 relative w-full">
           <Label>Add Player</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -156,134 +156,138 @@ export function PlayerEvaluation({
         <CreatePlayerDialog onPlayerCreated={addPlayerToReport} />
       </div>
 
-      <div className="rounded-md border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Player</TableHead>
-              <TableHead className="w-[80px]">Pos</TableHead>
-              <TableHead className="w-[100px]">Grade</TableHead>
-              <TableHead className="w-[150px]">Verdict</TableHead>
-              <TableHead>Comment</TableHead>
-              <TableHead className="w-[50px]" />
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : evaluations.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No players evaluated yet. Add players to start evaluating.
-                </TableCell>
-              </TableRow>
-            ) : (
-              evaluations.map((evaluation) => (
-                <TableRow key={evaluation.id}>
-                  <TableCell className="font-medium">
-                    {evaluation.player?.name || "Unknown"}
-                    <div className="text-xs text-muted-foreground">
-                      {evaluation.player?.position || "-"}
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <Input
-                      className="h-8"
-                      value={evaluation.position_in_match || ""}
-                      onChange={(e) =>
-                        updateEvaluation(
-                          evaluation.id,
-                          "position_in_match",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Pos"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <Select
-                      value={evaluation.grade || ""}
-                      onValueChange={(val) =>
-                        updateEvaluation(evaluation.id, "grade", val)
-                      }
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["A", "B", "C", "D"].map((g) => (
-                          <SelectItem key={g} value={g}>
-                            {g}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-
-                  <TableCell>
-                    <Select
-                      value={evaluation.verdict || ""}
-                      onValueChange={(val) =>
-                        updateEvaluation(evaluation.id, "verdict", val)
-                      }
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["Descartar", "Seguir", "Interesante", "Fichar"].map(
-                          (v) => (
-                            <SelectItem key={v} value={v}>
-                              {v}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-
-                  <TableCell>
-                    <Textarea
-                      className="min-h-[60px] resize-none"
-                      placeholder="Add comments..."
-                      value={evaluation.comment || ""}
-                      onChange={(e) =>
-                        updateEvaluation(
-                          evaluation.id,
-                          "comment",
-                          e.target.value,
-                        )
-                      }
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeEvaluation(evaluation.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
+      <div className="rounded-md border border-border w-full overflow-hidden">
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[800px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Player</TableHead>
+                  <TableHead className="w-[80px]">Pos</TableHead>
+                  <TableHead className="w-[100px]">Grade</TableHead>
+                  <TableHead className="w-[150px]">Verdict</TableHead>
+                  <TableHead>Comment</TableHead>
+                  <TableHead className="w-[50px]" />
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : evaluations.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No players evaluated yet. Add players to start evaluating.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  evaluations.map((evaluation) => (
+                    <TableRow key={evaluation.id}>
+                      <TableCell className="font-medium">
+                        {evaluation.player?.name || "Unknown"}
+                        <div className="text-xs text-muted-foreground">
+                          {evaluation.player?.position || "-"}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <Input
+                          className="h-8"
+                          value={evaluation.position_in_match || ""}
+                          onChange={(e) =>
+                            updateEvaluation(
+                              evaluation.id,
+                              "position_in_match",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Pos"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Select
+                          value={evaluation.grade || ""}
+                          onValueChange={(val) =>
+                            updateEvaluation(evaluation.id, "grade", val)
+                          }
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["A", "B", "C", "D"].map((g) => (
+                              <SelectItem key={g} value={g}>
+                                {g}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+
+                      <TableCell>
+                        <Select
+                          value={evaluation.verdict || ""}
+                          onValueChange={(val) =>
+                            updateEvaluation(evaluation.id, "verdict", val)
+                          }
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Descartar", "Seguir", "Interesante", "Fichar"].map(
+                              (v) => (
+                                <SelectItem key={v} value={v}>
+                                  {v}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+
+                      <TableCell>
+                        <Textarea
+                          className="min-h-[80px] resize-none"
+                          placeholder="Add comments..."
+                          value={evaluation.comment || ""}
+                          onChange={(e) =>
+                            updateEvaluation(
+                              evaluation.id,
+                              "comment",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeEvaluation(evaluation.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end">

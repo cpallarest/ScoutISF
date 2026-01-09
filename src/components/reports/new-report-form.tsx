@@ -346,7 +346,7 @@ export function NewReportForm() {
 
       <CardContent className="space-y-6">
         {/* Row 1: Season + Competition */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label>Season</Label>
             <Select value={selectedSeason} onValueChange={setSelectedSeason}>
@@ -480,7 +480,7 @@ export function NewReportForm() {
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <Button
             className="w-full"
             onClick={createManualReport}

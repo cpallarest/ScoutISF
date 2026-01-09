@@ -19,8 +19,6 @@ export interface Database {
           position: string | null
           nationality: string | null
           current_team_id: string | null
-          provider: string | null
-          provider_player_id: string | null
           created_at: string
           updated_at: string
         }
@@ -55,8 +53,6 @@ export interface Database {
           name: string
           country: string | null
           logo_url: string | null
-          provider: string | null
-          provider_team_id: string | null
           created_at: string
         }
         Insert: {
@@ -80,8 +76,6 @@ export interface Database {
           name: string
           country: string | null
           season: string | null
-          provider: string | null
-          provider_competition_id: string | null
           is_active: boolean | null
           created_at: string
         }
@@ -103,8 +97,6 @@ export interface Database {
       matches: {
         Row: {
           id: string
-          provider: string | null
-          provider_fixture_id: string | null
           competition_id: string | null
           season: string | null
           home_team_id: string | null
@@ -121,8 +113,6 @@ export interface Database {
         }
         Insert: {
           id?: string
-          provider?: string | null
-          provider_fixture_id?: string | null
           competition_id?: string | null
           season?: string | null
           home_team_id?: string | null
@@ -139,8 +129,6 @@ export interface Database {
         }
         Update: {
           id?: string
-          provider?: string | null
-          provider_fixture_id?: string | null
           competition_id?: string | null
           season?: string | null
           home_team_id?: string | null
@@ -191,29 +179,6 @@ export interface Database {
           position?: string | null
           x?: number | null
           y?: number | null
-          created_at?: string
-        }
-      }
-      provider_cache: {
-        Row: {
-          id: string
-          key: string
-          data: Json
-          expires_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          key: string
-          data: Json
-          expires_at: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          key?: string
-          data?: Json
-          expires_at?: string
           created_at?: string
         }
       }

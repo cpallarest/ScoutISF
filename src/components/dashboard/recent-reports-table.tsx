@@ -34,11 +34,12 @@ interface RecentReportsTableProps {
 // 👉 helper para tener SIEMPRE el mismo formato en server y client
 const formatDate = (iso: string) => {
   if (!iso) return "-";
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(iso));
+  // Handle YYYY-MM-DD manually to avoid timezone issues and hydration mismatches
+  const parts = iso.split('T')[0].split('-'); // Assuming ISO or YYYY-MM-DD
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+  }
+  return iso;
 };
 
 export function RecentReportsTable({ reports }: RecentReportsTableProps) {
@@ -72,108 +73,112 @@ export function RecentReportsTable({ reports }: RecentReportsTableProps) {
   };
 
   return (
-    <div className="rounded-md border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="w-[120px]">Date</TableHead>
-            <TableHead>Match</TableHead>
-            <TableHead>Competition</TableHead>
-            <TableHead>Result</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {reports.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center py-8 text-muted-foreground"
-              >
-                No reports found. Create your first report!
-              </TableCell>
-            </TableRow>
-          ) : (
-            reports.map((report) => (
-              <TableRow
-                key={report.id}
-                className="border-border hover:bg-muted/50 transition-colors"
-              >
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {formatDate(report.match_date)}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {report.home_team?.name || "Unknown"}{" "}
-                  <span className="text-muted-foreground">vs</span>{" "}
-                  {report.away_team?.name || "Unknown"}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {report.competition?.name || "-"}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={`font-mono ${
-                      (report.home_score ?? 0) > (report.away_score ?? 0)
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : (report.home_score ?? 0) < (report.away_score ?? 0)
-                          ? "bg-destructive/10 text-destructive border-destructive/20"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {report.home_score ?? 0} - {report.away_score ?? 0}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/dashboard/reports/${report.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/dashboard/reports/${report.id}/edit`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link
-                        href={`/dashboard/reports/${report.id}/print`}
-                        target="_blank"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-500 hover:bg-red-500/10"
-                      onClick={() => handleDelete(report.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+    <div className="rounded-md border border-border bg-card w-full overflow-hidden">
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[720px]">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="w-[120px]">Date</TableHead>
+                <TableHead>Match</TableHead>
+                <TableHead>Competition</TableHead>
+                <TableHead>Result</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {reports.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No reports found. Create your first report!
+                  </TableCell>
+                </TableRow>
+              ) : (
+                reports.map((report) => (
+                  <TableRow
+                    key={report.id}
+                    className="border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {formatDate(report.match_date)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {report.home_team?.name || "Unknown"}{" "}
+                      <span className="text-muted-foreground">vs</span>{" "}
+                      {report.away_team?.name || "Unknown"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {report.competition?.name || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`font-mono ${
+                          (report.home_score ?? 0) > (report.away_score ?? 0)
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : (report.home_score ?? 0) < (report.away_score ?? 0)
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {report.home_score ?? 0} - {report.away_score ?? 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link href={`/dashboard/reports/${report.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link href={`/dashboard/reports/${report.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link
+                            href={`/dashboard/reports/${report.id}/print`}
+                            target="_blank"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleDelete(report.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

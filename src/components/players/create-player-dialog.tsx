@@ -25,7 +25,11 @@ import { createClient } from "@/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 
-export function CreatePlayerDialog({ onPlayerCreated }) {
+export function CreatePlayerDialog({
+  onPlayerCreated,
+}: {
+  onPlayerCreated?: (player: any) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
@@ -34,7 +38,7 @@ export function CreatePlayerDialog({ onPlayerCreated }) {
   const [position, setPosition] = useState("");
 
   const [checking, setChecking] = useState(false);
-  const [duplicates, setDuplicates] = useState([]); // <- sin any[]
+  const [duplicates, setDuplicates] = useState<any[]>([]);
   const [showDuplicates, setShowDuplicates] = useState(false);
 
   const supabase = createClient();

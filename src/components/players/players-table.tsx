@@ -25,69 +25,73 @@ interface PlayersTableProps {
 
 export function PlayersTable({ players }: PlayersTableProps) {
   return (
-    <div className="rounded-md border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-border hover:bg-transparent">
-            <TableHead>Name</TableHead>
-            <TableHead>Position</TableHead>
-            <TableHead>Nationality</TableHead>
-            <TableHead>Foot</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {players.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center py-8 text-muted-foreground"
-              >
-                No players found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            players.map((player) => (
-              <TableRow
-                key={player.id}
-                className="border-border hover:bg-muted/50 transition-colors"
-              >
-                <TableCell className="font-medium">{player.name}</TableCell>
-                <TableCell>{player.position || "-"}</TableCell>
-                <TableCell>{player.nationality || "-"}</TableCell>
-                <TableCell>{player.foot || "-"}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {/* VER JUGADOR */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/dashboard/players/${player.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-
-                    {/* EDITAR JUGADOR */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      asChild
-                    >
-                      <Link href={`/dashboard/players/${player.id}/edit`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </TableCell>
+    <div className="rounded-md border border-border bg-card w-full overflow-hidden">
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[720px]">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead>Name</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Nationality</TableHead>
+                <TableHead>Foot</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {players.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No players found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                players.map((player) => (
+                  <TableRow
+                    key={player.id}
+                    className="border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-medium">{player.name}</TableCell>
+                    <TableCell>{player.position || "-"}</TableCell>
+                    <TableCell>{player.nationality || "-"}</TableCell>
+                    <TableCell>{player.foot || "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {/* VER JUGADOR */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link href={`/dashboard/players/${player.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+
+                        {/* EDITAR JUGADOR */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <Link href={`/dashboard/players/${player.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

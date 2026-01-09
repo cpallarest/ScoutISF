@@ -19,5 +19,9 @@ export default async function EditReportPage({ params }: { params: { id: string 
 
   if (!report) return <div>Report not found</div>;
 
-  return <ReportEditor teams={teams || []} competitions={competitions || []} userId={user.id} initialData={report} />;
+  return (
+    <div className="container mx-auto px-4 sm:px-6 py-8">
+      <ReportEditor teams={teams || []} competitions={competitions || []} userId={user.id} initialData={report} />
+    </div>
+  );
 }
