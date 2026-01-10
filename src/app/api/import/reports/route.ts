@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const text = await file.text();
     const rows = parseCSV(text, ";");
-    
+
     if (rows.length === 0) {
       return NextResponse.json({ error: "Empty CSV" }, { status: 400 });
     }
@@ -30,14 +30,18 @@ export async function POST(req: NextRequest) {
     const playerCache = new Map<string, string>(); // name+dob -> id
     const reportCache = new Map<string, string>(); // key -> id
 
-    // Pre-fetch existing data (optional optimization, but let's do lazy loading/upsert for simplicity and robustness)
+    let rowIndex = 0;
 
     for (const row of rows) {
+      rowIndex++;
+
       try {
         // 1. Parse Basic Data
         const matchDate = parseDate(row["matchdate"]);
         if (!matchDate) {
-          errors.push(`Invalid date for row: ${JSON.stringify(row)}`);
+          errors.push(
+            `Invalid date for row ${rowIndex}: ${JSON.stringify(row)}`,
+          );
           continue;
         }
 
@@ -59,20 +63,19 @@ export async function POST(req: NextRequest) {
         // If month > 7 (August), it's StartYear/(StartYear+1), else (StartYear-1)/StartYear
         const seasonStart = month > 7 ? year : year - 1;
         const season = `${seasonStart}/${seasonStart + 1}`;
-        
+
         const compKey = `${competitionName}_${season}`;
         let compId = competitionCache.get(compKey);
 
         if (!compId) {
-          // Check/Insert Competition
           const { data: existingComp } = await supabase
             .from("competitions")
             .select("id")
             .eq("name", competitionName)
             .eq("season", season)
-            .single();
+            .maybeSingle();
 
-          if (existingComp) {
+          if (existingComp?.id) {
             compId = existingComp.id;
           } else {
             const { data: newComp, error: compError } = await supabase
@@ -80,34 +83,33 @@ export async function POST(req: NextRequest) {
               .insert({ name: competitionName, season })
               .select("id")
               .single();
-            
+
             if (compError) throw compError;
-            if (newComp) {
-              compId = newComp.id;
-            }
+            compId = newComp?.id;
           }
 
-          // Safety check to ensure compId is a string before using it or caching it
           if (!compId) {
-            errors.push(`Failed to resolve competition ID for row with competition: ${competitionName}`);
+            errors.push(
+              `Failed to resolve competition ID for row ${rowIndex} (competition: ${competitionName})`,
+            );
             continue;
           }
-          
+
           competitionCache.set(compKey, compId);
         }
 
         // 3. Teams (Home & Away)
-        // Function to get/create team
-        const getTeamId = async (name: string) => {
-          if (teamCache.has(name)) return teamCache.get(name)!;
-          
+        const getTeamId = async (name: string): Promise<string> => {
+          const cached = teamCache.get(name);
+          if (cached) return cached;
+
           const { data: existingTeam } = await supabase
             .from("teams")
             .select("id")
             .eq("name", name)
-            .single();
+            .maybeSingle();
 
-          if (existingTeam) {
+          if (existingTeam?.id) {
             teamCache.set(name, existingTeam.id);
             return existingTeam.id;
           }
@@ -117,10 +119,14 @@ export async function POST(req: NextRequest) {
             .insert({ name })
             .select("id")
             .single();
-            
+
           if (teamError) throw teamError;
-          teamCache.set(name, newTeam.id);
-          return newTeam.id;
+
+          const id = newTeam?.id;
+          if (!id) throw new Error(`Failed to create team: ${name}`);
+
+          teamCache.set(name, id);
+          return id;
         };
 
         const homeTeamId = await getTeamId(homeTeamName);
@@ -137,9 +143,9 @@ export async function POST(req: NextRequest) {
             .eq("match_date", matchDate)
             .eq("home_team_id", homeTeamId)
             .eq("away_team_id", awayTeamId)
-            .single();
+            .maybeSingle();
 
-          if (existingReport) {
+          if (existingReport?.id) {
             reportId = existingReport.id;
           } else {
             const { data: newReport, error: reportError } = await supabase
@@ -149,15 +155,27 @@ export async function POST(req: NextRequest) {
                 home_team_id: homeTeamId,
                 away_team_id: awayTeamId,
                 competition_id: compId,
-                status: "draft"
+                status: "draft",
               })
               .select("id")
               .single();
 
             if (reportError) throw reportError;
-            reportId = newReport.id;
-            importedReportsCount++;
+            reportId = newReport?.id;
+
+            if (reportId) {
+              importedReportsCount++;
+            }
           }
+
+          // ✅ Guard crítico: nunca metas undefined al cache
+          if (!reportId) {
+            errors.push(
+              `Failed to resolve reportId for row ${rowIndex} (reportKey: ${reportKey})`,
+            );
+            continue;
+          }
+
           reportCache.set(reportKey, reportId);
         }
 
@@ -165,36 +183,31 @@ export async function POST(req: NextRequest) {
         const dob = parseDate(row["DOB"]);
         const nationality = row["PrimaryNationality"]?.trim() || null;
         const playerKey = `${playerName}_${dob || "no_dob"}`;
-        
+
         let playerId = playerCache.get(playerKey);
 
         if (!playerId) {
-          // Try to find player
-          let query = supabase.from("players").select("id").eq("name", playerName);
+          let query = supabase
+            .from("players")
+            .select("id")
+            .eq("name", playerName);
+
           if (dob) {
             query = query.eq("dob", dob);
-          } else {
-            // If no DOB, risk of mixing players, but we accept it per requirements
           }
-          
+
           const { data: existingPlayers } = await query.limit(1);
           const existingPlayer = existingPlayers?.[0];
 
-          if (existingPlayer) {
+          if (existingPlayer?.id) {
             playerId = existingPlayer.id;
           } else {
-            // Determine team_id if PlayerClub matches one of the teams
             const playerClub = row["PlayerClub"]?.trim();
-            let currentTeamId = null;
+            let currentTeamId: string | null = null;
+
             if (playerClub) {
-              // Try to resolve team id for player club, but don't force create it just for this
-              // Or maybe we do? Let's just check if it matches home or away, otherwise ignore or maybe lazy create?
-              // Prompt says: "if PlayerClub matches an existing team"
               if (playerClub === homeTeamName) currentTeamId = homeTeamId;
               else if (playerClub === awayTeamName) currentTeamId = awayTeamId;
-              else {
-                 // Check cache or DB? Maybe too expensive. Let's skip for now unless strict.
-              }
             }
 
             const { data: newPlayer, error: playerError } = await supabase
@@ -203,25 +216,37 @@ export async function POST(req: NextRequest) {
                 name: playerName,
                 dob,
                 nationality,
-                current_team_id: currentTeamId
+                current_team_id: currentTeamId,
               })
               .select("id")
               .single();
 
             if (playerError) throw playerError;
-            playerId = newPlayer.id;
-            importedPlayersCount++;
+
+            playerId = newPlayer?.id;
+
+            if (playerId) {
+              importedPlayersCount++;
+            }
           }
+
+          if (!playerId) {
+            errors.push(
+              `Failed to resolve playerId for row ${rowIndex} (player: ${playerName})`,
+            );
+            continue;
+          }
+
           playerCache.set(playerKey, playerId);
         }
 
         // 6. Report Player Evaluation
-        // Upsert based on report_id + player_id
+        // ✅ A estas alturas reportId y playerId son string seguros
         const evaluationData = {
           report_id: reportId,
           player_id: playerId,
           position_in_match: row["R_Posición en el Encuentro"]?.trim() || null,
-          grade: row["R_Valoración en el Encuentro"]?.trim() || null, // A, B, C, D
+          grade: row["R_Valoración en el Encuentro"]?.trim() || null,
           verdict: row["R_Verdicto"]?.trim() || null,
           comment: row["C_Comentario"]?.trim() || null,
         };
@@ -231,11 +256,13 @@ export async function POST(req: NextRequest) {
           .upsert(evaluationData, { onConflict: "report_id,player_id" });
 
         if (evalError) throw evalError;
-        importedEvaluationsCount++;
 
+        importedEvaluationsCount++;
       } catch (err: any) {
         console.error("Row error:", err);
-        errors.push(`Error processing row for player ${row["Player"]}: ${err.message}`);
+        errors.push(
+          `Error processing row ${rowIndex} for player ${row["Player"]}: ${err?.message || String(err)}`,
+        );
       }
     }
 
@@ -244,9 +271,8 @@ export async function POST(req: NextRequest) {
       importedReports: importedReportsCount,
       importedPlayers: importedPlayersCount,
       importedEvaluations: importedEvaluationsCount,
-      errors
+      errors,
     });
-
   } catch (error: any) {
     console.error("Import error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
