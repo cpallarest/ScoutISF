@@ -82,8 +82,17 @@ export async function POST(req: NextRequest) {
               .single();
             
             if (compError) throw compError;
-            compId = newComp.id;
+            if (newComp) {
+              compId = newComp.id;
+            }
           }
+
+          // Safety check to ensure compId is a string before using it or caching it
+          if (!compId) {
+            errors.push(`Failed to resolve competition ID for row with competition: ${competitionName}`);
+            continue;
+          }
+          
           competitionCache.set(compKey, compId);
         }
 
