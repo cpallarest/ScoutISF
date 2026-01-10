@@ -38,6 +38,7 @@ export function PlayersTable({ players }: PlayersTableProps) {
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {players.length === 0 ? (
                 <TableRow>
@@ -58,9 +59,9 @@ export function PlayersTable({ players }: PlayersTableProps) {
                     <TableCell>{player.position || "-"}</TableCell>
                     <TableCell>{player.nationality || "-"}</TableCell>
                     <TableCell>{player.foot || "-"}</TableCell>
+
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {/* VER JUGADOR */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -72,7 +73,6 @@ export function PlayersTable({ players }: PlayersTableProps) {
                           </Link>
                         </Button>
 
-                        {/* EDITAR JUGADOR */}
                         <Button
                           variant="ghost"
                           size="icon"
