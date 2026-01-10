@@ -117,6 +117,8 @@ export type Database = {
           ht_home_score: number | null
           id: string
           kickoff_at: string | null
+          provider: string | null
+          provider_fixture_id: string | null
           season: string | null
           status: string | null
           updated_at: string | null
@@ -133,6 +135,8 @@ export type Database = {
           ht_home_score?: number | null
           id?: string
           kickoff_at?: string | null
+          provider?: string | null
+          provider_fixture_id?: string | null
           season?: string | null
           status?: string | null
           updated_at?: string | null
@@ -149,6 +153,8 @@ export type Database = {
           ht_home_score?: number | null
           id?: string
           kickoff_at?: string | null
+          provider?: string | null
+          provider_fixture_id?: string | null
           season?: string | null
           status?: string | null
           updated_at?: string | null
@@ -207,6 +213,7 @@ export type Database = {
           name: string
           nationality: string | null
           position: string | null
+          provider: string | null
           team_id: string | null
           updated_at: string | null
         }
@@ -220,6 +227,7 @@ export type Database = {
           name: string
           nationality?: string | null
           position?: string | null
+          provider?: string | null
           team_id?: string | null
           updated_at?: string | null
         }
@@ -233,6 +241,7 @@ export type Database = {
           name?: string
           nationality?: string | null
           position?: string | null
+          provider?: string | null
           team_id?: string | null
           updated_at?: string | null
         }
@@ -245,6 +254,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provider_cache: {
+        Row: {
+          created_at: string | null
+          data: Json
+          expires_at: string
+          id: string
+          key: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          expires_at: string
+          id?: string
+          key: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          expires_at?: string
+          id?: string
+          key?: string
+        }
+        Relationships: []
       }
       report_players: {
         Row: {
@@ -521,6 +554,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          provider: string | null
         }
         Insert: {
           country?: string | null
@@ -528,6 +562,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          provider?: string | null
         }
         Update: {
           country?: string | null
@@ -535,6 +570,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          provider?: string | null
         }
         Relationships: []
       }
