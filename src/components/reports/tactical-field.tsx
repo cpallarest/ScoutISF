@@ -220,9 +220,9 @@ function Pitch({
           style={{ left: `${player.x}%`, top: `${player.y}%` }}
           onPointerDown={(e) => onStartDrag(player.id, e)}
         >
-          <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg border-2 border-white relative hover:scale-110 transition-transform">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg border-2 border-white relative hover:scale-110 transition-transform">
             <input
-              className="w-full h-full bg-transparent text-center outline-none cursor-move font-mono"
+              className="w-full h-full bg-transparent text-center outline-none cursor-move font-mono text-xs sm:text-base"
               value={player.dorsal}
               onChange={(e) =>
                 updatePlayer(player.id, "dorsal", e.target.value)
@@ -232,7 +232,7 @@ function Pitch({
             />
             <button
               type="button"
-              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
               onClick={(e) => {
                 e.stopPropagation();
                 removePlayer(player.id);
@@ -243,7 +243,7 @@ function Pitch({
           </div>
 
           <input
-            className="mt-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded text-center w-24 outline-none border-none backdrop-blur-sm"
+            className="mt-1 bg-black/60 text-white text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 rounded text-center w-20 sm:w-24 outline-none border-none backdrop-blur-sm"
             value={player.name}
             onChange={(e) => updatePlayer(player.id, "name", e.target.value)}
             placeholder="Player Name"

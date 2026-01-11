@@ -62,6 +62,8 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
       report:reports(
         id,
         match_date,
+        home_team:teams!reports_home_team_id_fkey(name),
+        away_team:teams!reports_away_team_id_fkey(name),
         competition:competitions(name)
       )
     `,
@@ -134,17 +136,24 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               const reportId = rp?.report?.id;
               const compName = rp?.report?.competition?.name ?? "Competition";
               const matchDate = rp?.report?.match_date ?? null;
+              const homeTeam = rp?.report?.home_team?.name ?? "Unknown";
+              const awayTeam = rp?.report?.away_team?.name ?? "Unknown";
 
               return (
                 <div key={rp.id} className="border rounded-md p-4 space-y-2">
-                  <div className="flex justify-between items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
+                     <div className="font-semibold text-lg">
+                        {homeTeam} vs {awayTeam}
+                     </div>
+                  </div>
+                  <div className="flex justify-between items-center gap-4 text-sm text-muted-foreground">
                     <div className="font-medium">{compName}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div>
                       {formatDateDMY(matchDate)}
                     </div>
                   </div>
 
-                  <div className="flex gap-4 text-sm">
+                  <div className="flex gap-4 text-sm pt-2">
                     <span>
                       <strong>Grade:</strong> {rp.grade ?? "-"}
                     </span>
