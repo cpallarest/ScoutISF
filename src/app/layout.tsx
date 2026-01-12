@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
 import { TempoInit } from "@/components/tempo-init";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
+// const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
+// const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" });
 
 export const metadata: Metadata = {
   title: "Football Scouting Platform",
@@ -21,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${manrope.className} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+      <body className={manrope.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

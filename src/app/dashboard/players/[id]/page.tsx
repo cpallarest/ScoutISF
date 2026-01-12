@@ -20,7 +20,7 @@ function formatDateDMY(value: string | null | undefined) {
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const {
     data: { user },
@@ -142,15 +142,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               return (
                 <div key={rp.id} className="border rounded-md p-4 space-y-2">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
-                     <div className="font-semibold text-lg">
-                        {homeTeam} vs {awayTeam}
-                     </div>
+                    <div className="font-semibold text-lg">
+                      {homeTeam} vs {awayTeam}
+                    </div>
                   </div>
                   <div className="flex justify-between items-center gap-4 text-sm text-muted-foreground">
                     <div className="font-medium">{compName}</div>
-                    <div>
-                      {formatDateDMY(matchDate)}
-                    </div>
+                    <div>{formatDateDMY(matchDate)}</div>
                   </div>
 
                   <div className="flex gap-4 text-sm pt-2">

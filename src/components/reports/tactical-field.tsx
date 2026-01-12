@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PlayerMarker {
   id: string;
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
+  x: number;
+  y: number;
   dorsal: string;
   name: string;
 }
 
 interface TacticalFieldProps {
   data: any;
-  matchId?: string; // ya no se usa para sync, pero lo dejamos por compatibilidad
+  matchId?: string;
   onSave: (data: any) => void;
 }
 
@@ -27,11 +27,15 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
     data?.lineup_data?.away || [],
   );
   const [activeTab, setActiveTab] = useState<"home" | "away">("home");
+  const [isMounted, setIsMounted] = useState(false);
 
   const fieldRef = useRef<HTMLDivElement>(null);
-
-  // Arrastre robusto: guardamos el id en ref para evitar “lags” por renders
   const draggingIdRef = useRef<string | null>(null);
+
+  // ✅ Evita que el código se ejecute en el servidor
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const players = activeTab === "home" ? homePlayers : awayPlayers;
   const setPlayers = activeTab === "home" ? setHomePlayers : setAwayPlayers;
@@ -62,13 +66,16 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
     onSave({ home: homePlayers, away: awayPlayers });
   };
 
-  // ✅ IMPORTANTE: capturamos el puntero en el CAMPO (fieldRef),
-  // porque el onPointerMove está en el campo.
   const startDrag = (id: string, e: React.PointerEvent) => {
+    if (!isMounted) return; // ✅ Protección extra
     draggingIdRef.current = id;
 
     if (fieldRef.current) {
-      fieldRef.current.setPointerCapture(e.pointerId);
+      try {
+        fieldRef.current.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignorar si falla (por ejemplo en navegadores viejos)
+      }
     }
 
     e.preventDefault();
@@ -76,7 +83,7 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
 
   const onPointerMove = (e: React.PointerEvent) => {
     const draggingId = draggingIdRef.current;
-    if (!draggingId || !fieldRef.current) return;
+    if (!draggingId || !fieldRef.current || !isMounted) return;
 
     const rect = fieldRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -85,7 +92,6 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
     const clampedX = Math.max(0, Math.min(100, x));
     const clampedY = Math.max(0, Math.min(100, y));
 
-    // Actualiza SOLO el equipo activo (home o away) porque arrastras en su pestaña
     setPlayers((prev) =>
       prev.map((p) =>
         p.id === draggingId ? { ...p, x: clampedX, y: clampedY } : p,
@@ -96,11 +102,11 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
   const endDrag = (e: React.PointerEvent) => {
     draggingIdRef.current = null;
 
-    if (fieldRef.current) {
+    if (fieldRef.current && isMounted) {
       try {
         fieldRef.current.releasePointerCapture(e.pointerId);
       } catch {
-        // si no había capture activo, no pasa nada
+        // Ignorar si falla
       }
     }
   };
@@ -108,6 +114,13 @@ export function TacticalField({ data, matchId, onSave }: TacticalFieldProps) {
   const homeCount = useMemo(() => homePlayers.length, [homePlayers.length]);
   const awayCount = useMemo(() => awayPlayers.length, [awayPlayers.length]);
   const currentCount = activeTab === "home" ? homeCount : awayCount;
+
+  // ✅ No renderizar nada hasta que esté montado en el cliente
+  if (!isMounted) {
+    return (
+      <div className="w-full aspect-[16/9] bg-muted animate-pulse rounded-lg" />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -195,7 +208,6 @@ function Pitch({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
       style={{
-        // 🔥 esto es clave en móviles/trackpad para que no “secuestren” el gesto
         touchAction: "none",
         backgroundImage: `
           linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
@@ -204,12 +216,10 @@ function Pitch({
         backgroundSize: "10% 10%",
       }}
     >
-      {/* Pitch Markings */}
       <div className="absolute inset-4 border-2 border-white/20 rounded-sm pointer-events-none" />
       <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/20 pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 w-24 h-24 border-2 border-white/20 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-      {/* Goals */}
       <div className="absolute top-1/2 left-0 w-8 h-24 border-2 border-l-0 border-white/20 -translate-y-1/2 pointer-events-none" />
       <div className="absolute top-1/2 right-0 w-8 h-24 border-2 border-r-0 border-white/20 -translate-y-1/2 pointer-events-none" />
 

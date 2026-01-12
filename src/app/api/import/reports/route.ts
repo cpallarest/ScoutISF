@@ -1,21 +1,46 @@
+// src/app/api/import/reports/route.ts
 import { createAdminClient } from "@/supabase/admin";
 import { parseCSV, parseDate } from "@/lib/import/csv";
 import { NextRequest, NextResponse } from "next/server";
 
+function detectDelimiter(csvText: string): "," | ";" {
+  const firstLine = (csvText.split(/\r?\n/).find((l) => l.trim().length > 0) ??
+    "") as string;
+
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+
+  return semiCount > commaCount ? ";" : ",";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
     const text = await file.text();
-    const rows = parseCSV(text, ";");
+    const delimiter = detectDelimiter(text);
+    const rows = parseCSV(text, delimiter);
 
     if (rows.length === 0) {
       return NextResponse.json({ error: "Empty CSV" }, { status: 400 });
+    }
+
+    // Guard útil: si el CSV no trae columnas esperadas, mejor decirlo claro.
+    if (rows[0] && !("matchdate" in rows[0])) {
+      return NextResponse.json(
+        {
+          error:
+            "CSV columns not detected correctly (matchdate missing). Check delimiter/format.",
+          detectedDelimiter: delimiter,
+          sampleKeys: Object.keys(rows[0]),
+        },
+        { status: 400 },
+      );
     }
 
     const supabase = createAdminClient();
@@ -24,7 +49,7 @@ export async function POST(req: NextRequest) {
     let importedPlayersCount = 0;
     let importedEvaluationsCount = 0;
 
-    // Caches to minimize DB lookups
+    // Caches
     const competitionCache = new Map<string, string>(); // name+season -> id
     const teamCache = new Map<string, string>(); // name -> id
     const playerCache = new Map<string, string>(); // name+dob -> id
@@ -36,7 +61,7 @@ export async function POST(req: NextRequest) {
       rowIndex++;
 
       try {
-        // 1. Parse Basic Data
+        // 1) Match date
         const matchDate = parseDate(row["matchdate"]);
         if (!matchDate) {
           errors.push(
@@ -51,16 +76,14 @@ export async function POST(req: NextRequest) {
         const playerName = row["Player"]?.trim();
 
         if (!homeTeamName || !awayTeamName || !competitionName || !playerName) {
-          // Skip if essential data missing
+          // Fila incompleta: la saltamos
           continue;
         }
 
-        // 2. Competition
-        // Infer season from date (e.g., 2021-09-01 -> 2021/2022)
+        // 2) Competition season inferred from matchDate
         const dateObj = new Date(matchDate);
         const year = dateObj.getFullYear();
         const month = dateObj.getMonth() + 1; // 1-12
-        // If month > 7 (August), it's StartYear/(StartYear+1), else (StartYear-1)/StartYear
         const seasonStart = month > 7 ? year : year - 1;
         const season = `${seasonStart}/${seasonStart + 1}`;
 
@@ -98,7 +121,7 @@ export async function POST(req: NextRequest) {
           competitionCache.set(compKey, compId);
         }
 
-        // 3. Teams (Home & Away)
+        // 3) Teams (upsert by name)
         const getTeamId = async (name: string): Promise<string> => {
           const cached = teamCache.get(name);
           if (cached) return cached;
@@ -132,7 +155,7 @@ export async function POST(req: NextRequest) {
         const homeTeamId = await getTeamId(homeTeamName);
         const awayTeamId = await getTeamId(awayTeamName);
 
-        // 4. Report
+        // 4) Report (unique by match_date + home + away)
         const reportKey = `${matchDate}_${homeTeamId}_${awayTeamId}`;
         let reportId = reportCache.get(reportKey);
 
@@ -163,12 +186,9 @@ export async function POST(req: NextRequest) {
             if (reportError) throw reportError;
             reportId = newReport?.id;
 
-            if (reportId) {
-              importedReportsCount++;
-            }
+            if (reportId) importedReportsCount++;
           }
 
-          // ✅ Guard crítico: nunca metas undefined al cache
           if (!reportId) {
             errors.push(
               `Failed to resolve reportId for row ${rowIndex} (reportKey: ${reportKey})`,
@@ -179,7 +199,7 @@ export async function POST(req: NextRequest) {
           reportCache.set(reportKey, reportId);
         }
 
-        // 5. Player
+        // 5) Player (match by name + dob if dob exists; else name only)
         const dob = parseDate(row["DOB"]);
         const nationality = row["PrimaryNationality"]?.trim() || null;
         const playerKey = `${playerName}_${dob || "no_dob"}`;
@@ -192,9 +212,7 @@ export async function POST(req: NextRequest) {
             .select("id")
             .eq("name", playerName);
 
-          if (dob) {
-            query = query.eq("dob", dob);
-          }
+          if (dob) query = query.eq("dob", dob);
 
           const { data: existingPlayers } = await query.limit(1);
           const existingPlayer = existingPlayers?.[0];
@@ -224,10 +242,7 @@ export async function POST(req: NextRequest) {
             if (playerError) throw playerError;
 
             playerId = newPlayer?.id;
-
-            if (playerId) {
-              importedPlayersCount++;
-            }
+            if (playerId) importedPlayersCount++;
           }
 
           if (!playerId) {
@@ -240,8 +255,7 @@ export async function POST(req: NextRequest) {
           playerCache.set(playerKey, playerId);
         }
 
-        // 6. Report Player Evaluation
-        // ✅ A estas alturas reportId y playerId son string seguros
+        // 6) Evaluation (upsert by report_id + player_id)
         const evaluationData = {
           report_id: reportId,
           player_id: playerId,
@@ -268,6 +282,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      detectedDelimiter: delimiter,
       importedReports: importedReportsCount,
       importedPlayers: importedPlayersCount,
       importedEvaluations: importedEvaluationsCount,

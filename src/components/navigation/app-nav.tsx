@@ -11,7 +11,7 @@ import {
   Trophy,
   User,
   LogOut,
-  Upload,
+  FolderUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
@@ -23,7 +23,7 @@ const sidebarItems = [
   { icon: Users, label: "Players", href: "/dashboard/players" },
   { icon: Shield, label: "Teams", href: "/dashboard/teams" },
   { icon: Trophy, label: "Competitions", href: "/dashboard/competitions" },
-  { icon: Upload, label: "Import Data", href: "/dashboard/import" },
+  { icon: FolderUp, label: "Import Data", href: "/dashboard/import" },
   { icon: User, label: "Profile", href: "/dashboard/profile" },
 ];
 

@@ -1,4 +1,4 @@
-import React from "react";
+/*import React from "react";
 import { updateSession } from "./supabase/middleware";
 import { type NextRequest } from "next/server";
 
@@ -15,7 +15,14 @@ export const config = {
      * - favicon.ico (favicon file)
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
      * Feel free to modify this pattern to include more paths.
-     */
+     
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
+*/
+
+import { NextResponse } from "next/server";
+export function middleware() {
+  return NextResponse.next();
+}
+export const config = { matcher: [] };
