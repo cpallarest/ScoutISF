@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const redirect_to = requestUrl.searchParams.get("redirect_to");
 
   if (code) {
-    const supabase = await createClient();
+    const supabase = createClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
 

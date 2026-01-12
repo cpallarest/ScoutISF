@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { NewReportForm } from "@/components/reports/new-report-form";
 
 export default async function NewReportPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return redirect("/sign-in");

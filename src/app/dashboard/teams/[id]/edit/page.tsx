@@ -10,7 +10,7 @@ export default async function EditTeamPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

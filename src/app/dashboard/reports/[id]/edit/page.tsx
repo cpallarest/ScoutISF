@@ -3,7 +3,7 @@ import { ReportEditor } from "@/components/reports/report-editor";
 import { redirect } from "next/navigation";
 
 export default async function EditReportPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect("/sign-in");
 

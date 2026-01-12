@@ -8,7 +8,7 @@ import { TeamsTable } from "@/components/teams/teams-table";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 
 export default async function TeamsPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return redirect("/sign-in");

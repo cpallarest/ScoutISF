@@ -3,7 +3,7 @@ import { ImportReportsCard } from "@/components/import/import-reports-card";
 import { redirect } from "next/navigation";
 
 export default async function ImportPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

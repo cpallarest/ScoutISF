@@ -7,7 +7,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const {
     data: { user },

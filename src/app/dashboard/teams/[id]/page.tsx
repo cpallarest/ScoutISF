@@ -18,7 +18,7 @@ export default async function TeamDetailPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -7,7 +7,7 @@ export default async function EditPlayerPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const {
     data: { user },

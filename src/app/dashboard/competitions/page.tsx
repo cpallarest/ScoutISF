@@ -8,7 +8,7 @@ import { CompetitionsTable } from "@/components/competitions/competitions-table"
 import { CreateCompetitionDialog } from "@/components/competitions/create-competition-dialog";
 
 export default async function CompetitionsPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return redirect("/sign-in");

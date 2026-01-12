@@ -5,7 +5,7 @@ import { PlayersTable } from "@/components/players/players-table";
 import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 
 export default async function PlayersPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
