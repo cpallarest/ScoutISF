@@ -44,6 +44,75 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_field_players: {
+        Row: {
+          created_at: string | null
+          field_id: string
+          id: string
+          note: string | null
+          player_id: string
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string | null
+          field_id: string
+          id?: string
+          note?: string | null
+          player_id: string
+          x: number
+          y: number
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string
+          id?: string
+          note?: string | null
+          player_id?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_field_players_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "featured_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_field_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_fields: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          system: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          system: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          system?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lineup_positions: {
         Row: {
           created_at: string | null
@@ -245,6 +314,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provider_cache: {
+        Row: {
+          created_at: string | null
+          data: Json
+          expires_at: string
+          id: string
+          key: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          expires_at: string
+          id?: string
+          key: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          expires_at?: string
+          id?: string
+          key?: string
+        }
+        Relationships: []
       }
       report_players: {
         Row: {

@@ -1,104 +1,180 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
-export function CreateTeamDialog() {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+type Team = {
+  id: string;
+  name: string;
+  country: string | null;
+};
+
+interface CreateTeamDialogProps {
+  /** Opcional: callback para usar el team creado/recuperado (por ejemplo desde New Report) */
+  onTeamCreated?: (team: Team) => void;
+}
+
+export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
   const supabase = createClient();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [country, setCountry] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
-    const country = formData.get("country") as string;
-    const logo_url = formData.get("logo_url") as string;
-
-    const { error } = await supabase.from("teams").insert({
-      name,
-      country: country || null,
-      logo_url: logo_url || null,
-    });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
-
-    toast({
-      title: "Success",
-      description: "Team created successfully",
-    });
-
-    setOpen(false);
-    router.refresh();
+  const resetState = () => {
+    setName("");
+    setCountry("");
     setLoading(false);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    try {
+      setLoading(true);
+
+      // 1) Buscar si ya existe el equipo por nombre (case-insensitive)
+      const { data: existing, error: existingError } = await supabase
+        .from("teams")
+        .select("id, name, country")
+        .ilike("name", name.trim())
+        .maybeSingle();
+
+      if (existingError) {
+        console.error("Error checking existing team:", existingError);
+      }
+
+      if (existing) {
+        // Ya existe → no insertamos, usamos el existente
+        toast({
+          title: "Team already exists",
+          description: `Using existing team "${existing.name}".`,
+        });
+
+        onTeamCreated?.({
+          id: existing.id,
+          name: existing.name,
+          country: existing.country ?? null,
+        });
+
+        setOpen(false);
+        resetState();
+        return;
+      }
+
+      // 2) Crear nuevo equipo
+      const { data: newTeam, error } = await supabase
+        .from("teams")
+        .insert({
+          name: name.trim(),
+          country: country.trim() || null,
+        })
+        .select("id, name, country")
+        .single();
+
+      if (error) {
+        console.error("Error creating team:", error);
+        toast({
+          title: "Error creating team",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (newTeam) {
+        toast({
+          title: "Team created",
+          description: `Team "${newTeam.name}" has been created.`,
+        });
+
+        onTeamCreated?.({
+          id: newTeam.id,
+          name: newTeam.name,
+          country: newTeam.country ?? null,
+        });
+      }
+
+      setOpen(false);
+      resetState();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        if (!value) resetState();
+      }}
+    >
       <DialogTrigger asChild>
-        <Button>
+        <Button size="sm">
           <Plus className="mr-2 h-4 w-4" />
           Create Team
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create New Team</DialogTitle>
-            <DialogDescription>
-              Add a new team to the database manually.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" placeholder="e.g. Real Madrid" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" placeholder="e.g. Spain" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="logo_url">Logo URL</Label>
-              <Input id="logo_url" name="logo_url" placeholder="https://..." />
-            </div>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create new team</DialogTitle>
+        </DialogHeader>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="team-name">Name</Label>
+            <Input
+              id="team-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Finland (Senior)"
+              required
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+
+          <div className="space-y-2">
+            <Label htmlFor="team-country">Country (optional)</Label>
+            <Input
+              id="team-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="e.g. Finland"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setOpen(false);
+                resetState();
+              }}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Team
+
+            <Button type="submit" disabled={!name.trim() || loading}>
+              {loading ? "Saving..." : "Create"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

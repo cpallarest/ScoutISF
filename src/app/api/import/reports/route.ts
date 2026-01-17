@@ -137,13 +137,28 @@ export async function POST(req: NextRequest) {
             return existingTeam.id;
           }
 
+          // Try to create, handle potential race condition if unique constraint exists
           const { data: newTeam, error: teamError } = await supabase
             .from("teams")
             .insert({ name })
             .select("id")
             .single();
 
-          if (teamError) throw teamError;
+          if (teamError) {
+             // If unique violation, try to fetch again
+             if (teamError.code === '23505') {
+                const { data: retryTeam } = await supabase
+                  .from("teams")
+                  .select("id")
+                  .eq("name", name)
+                  .maybeSingle();
+                if (retryTeam?.id) {
+                   teamCache.set(name, retryTeam.id);
+                   return retryTeam.id;
+                }
+             }
+             throw teamError;
+          }
 
           const id = newTeam?.id;
           if (!id) throw new Error(`Failed to create team: ${name}`);
